@@ -1,0 +1,27 @@
+{
+  "name": "sudoku",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "dev:web": "pnpm --filter @sudoku/web dev",
+    "dev:pwa": "pnpm --filter @sudoku/pwa dev",
+    "build": "pnpm -r --filter './apps/*' build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.21.0",
+      "onFail": "download"
+    }
+  },
+  "type": "module"
+}
