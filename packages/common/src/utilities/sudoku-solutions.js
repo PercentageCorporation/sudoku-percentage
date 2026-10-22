@@ -35,9 +35,9 @@ export function getSSGame() {
 	console.log("getSSGame:", ix);
 	const g = sampleGames[ix];
 
-	const gameid = g["game"];
-	const difficulty = g["difficulty"];
-	const v = g["values"];
+	const gameid = g["number"];
+	const description = g["description"];
+	const v = g["game"];
 	const s = g["solution"];
 	const values = linearTextToGrid(v);
 	const solution = linearTextToGrid(s);

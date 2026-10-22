@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { useHintStore } from "@sudoku/common/store/hintStore";
 import { findCandidates, validateBoard, validateManBoard, computeCandidates } from "@sudoku/common/utilities/utilities";
 import { RCS, LinearToGrid } from "@sudoku/common/utilities/constants";
 
@@ -191,40 +192,6 @@ export const useManCellsStore = create (
 	)
 );
 
-export const Hint = {
-	type: null,
-	cell: -1,
-	row: -1,
-	col: -1,
-	sq: -1,
-	msg: ""
-	};
-
-export const useHint = () => useHintStore((state) => state.hint);
-
-export const useHintStore = create (
-	(set, get) => ({
-		hint: {...Hint},
-
-		getHint: () => {
-			return get().hint;
-		},
-
-		setHint: (h) => {
-			set({ hint: h})
-		},
-
-		setHintMsg: (msg) => {
-			set({ hint: {...get().hint, msg } })
-		},
-
-		resetHint: () => {
-			set({ hint: {...Hint}})
-		},
-
-	})
-);
-
 export const useGameStateStore = create (
 	persist(
 		(set, get) => ({
@@ -367,7 +334,7 @@ export const cellStore = create(
 						parity: 0,
 						value: values[i],
 						originalValue: values[i],
-						solutionValue: solutionValues[i],
+						solutionValue: solutionValues ? solutionValues[i] : 0,
 						candidates: [],
 						noncandidates: [],
 						activecandidates: [],

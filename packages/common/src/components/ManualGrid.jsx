@@ -1,7 +1,8 @@
 import "@sudoku/common/styles/borders.css";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useCellActions, useManCellsStore, useHintStore, useGameStateStore } from "@sudoku/common/store/store";
+import { useCellActions, useManCellsStore, useGameStateStore } from "@sudoku/common/store/store";
+import { useHintStore } from "@sudoku/common/store/hintStore";
+import { useScreenStore } from '@sudoku/common/store/screenStore';
 import { LRUD, bstyles } from "@sudoku/common/utilities/constants";
 import { deleteGame, getGame, saveGame, linearTextToGrid } from "@sudoku/common/utilities/games";
 import { resetHintStats } from "@sudoku/common/hints/hints";
@@ -118,6 +119,7 @@ export default function ManualGrid() {
 	const { resetHint } = useHintStore();
 	const { loadGame } = useCellActions();
 	const { resetState, clearSolutionLog } = useGameStateStore();
+	const { setScreen } = useScreenStore();
 
 	const [ loadSavedGame, setLoadSavedGame ] = useState(false);
 	const [ seedGame, setSeedGame ] = useState(false);
@@ -125,7 +127,6 @@ export default function ManualGrid() {
 	const [ addSolution, setAddSolution ] = useState(false);
 	const [ deleteId, setDeleteId ] = useState(null);
 	const [ message, setMessage] = useState(manGameValid ? null : "Invalid Board");
-	const navigate = useNavigate();
 
 	//console.log("ManGrid", manGameValid, manSelectedCell);
 	//console.log("ManGrid1");
@@ -211,7 +212,7 @@ export default function ManualGrid() {
 
 	function returnToGame(e) {
 		e.preventDefault();
-		navigate('/');
+		setScreen('game');
 	}
 
 	function handleSaveGame(e, description) {
@@ -237,7 +238,7 @@ export default function ManualGrid() {
 		//console.log("handlePlay", mc);
 		loadGame(mc, sc,  manDescription);	// load live game
 		resetHint();
-		navigate('/');
+		setScreen('game');
 	}
 
 	function handleLoadGame(e) {
@@ -285,7 +286,7 @@ export default function ManualGrid() {
 				console.log(grid);
 				loadManCells("", filename, grid, null);
 				useManCellsStore.persist.rehydrate();
-				navigate("/manual");
+				//navigate("/manual");
 			}
 		}
 		input.click();
@@ -364,7 +365,7 @@ export default function ManualGrid() {
 		console.log(grid);
 		loadManSolution(grid);
 		useManCellsStore.persist.rehydrate();
-		navigate("/manual");
+		//navigate("/manual");
 
 		setAddSolution(false);
 	}
@@ -380,7 +381,7 @@ export default function ManualGrid() {
 			loadManCells(game.number, game.description, game.game, game.solution);
 			useManCellsStore.persist.rehydrate();
 		}
-		navigate("/manual");
+		//navigate("/manual");
 	}
 
 	function loadCancel() {
@@ -425,7 +426,7 @@ export default function ManualGrid() {
 		if (solution) loadManSolution(solution);
 		//console.log(grid);
 		useManCellsStore.persist.rehydrate();
-		navigate("/manual");
+		//navigate("/manual");
 	}
 
 	function seedCancel() {
@@ -441,7 +442,7 @@ export default function ManualGrid() {
 	}
 
 	return (
-		<div className="max-w-[412px] mx-2 ">
+		<div className="max-w-[412px] ">
 			<div>
 			{ seedGame && <SeedGameModal title="Paste Game" onConfirm={seedConfirm} onCancel={seedCancel}/> }
 			{ addSolution && <SeedGameModal title="Paste Solution" onConfirm={addSolutionConfirm} onCancel={addSolutionCancel}/> }
@@ -449,10 +450,10 @@ export default function ManualGrid() {
 			{ saveManGame && <SaveGameModal description={manDescription} onConfirm={saveConfirm} onCancel={saveCancel}/> }
 			{ deleteId && <ConfirmModal title={deleteId.title} content={deleteId.content} onConfirm={deleteConfirm} onCancel={deleteCancel}/> }
 			</div>
-			<div className="mx-2 h-12 flex items-center text-lg font-semibold">
+			<div className="h-7 flex items-center text-lg font-semibold">
 				{manNumber ? `${manNumber} : ${manDescription}` :  `${manDescription}`}
 			</div>
-			<div className="px-1 grid grid-cols-3 w-full border-black-300 bg-white">
+			<div className="grid grid-cols-3 w-full border-black-300 bg-white">
 			{
 				index.map((y, ix) => { return (<ManualGrid9 key={ix} y={y} />) })
 			}

@@ -1,4 +1,5 @@
 import { LinearToGrid } from "../utilities/constants";
+import { sampleGames } from "@sudoku/common/store/sampleGames";
 
 
 export function linearTextToGrid(values) {
@@ -121,4 +122,18 @@ export function exportGames() {
 
 
 }
+
+export function getSampleGame(ix) {
+	const numGames = sampleGames.length;
+	const r = Math.floor(Math.random() * numGames);
+	console.log("getSampleGame:", r, numGames);
+	const g = sampleGames[r];
+
+	const gameid = g["number"];
+	const description = g["description"];
+	const values = g["game"];
+	const solution = g["solution"];
+	return {values, solution, description, gameid};
+}
+
 

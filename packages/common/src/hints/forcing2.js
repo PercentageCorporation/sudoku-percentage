@@ -68,7 +68,7 @@ function findElimination(state, candidates) {
 		}
 	}
 
-	return null;
+	return [UNKNOWN, cix, 0, chainlen, maxlevel, numinvalid];
 }
 
 function explore(state, level) {

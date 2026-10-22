@@ -1,4 +1,5 @@
-import { cellStore, useCellActions } from "@sudoku/common/store/store";
+import { cellStore } from "@sudoku/common/store/store";
+import { useHintStore } from "@sudoku/common/store/hintStore";
 import {Rows, Cols, Squares, cellRow, cellCol, cellSquare, sqRowCells, sqColCells, sqRows012, sqCols012, RCS} from '@sudoku/common/utilities/constants';
 import { singletons, singleCounts } from "./singles";
 import { uniqueRectangles, emptyRectangles } from './rectangles';
@@ -60,9 +61,12 @@ export function hintlog(name, result, elapsed) {
 export function tryHint(name, fn) {
 	const start = performance.now();
 	const result = fn();
-	const elapsed = performance.now() - start;
 
-	hintlog(name, result, elapsed);
+	useHintStore.getState().logHint(
+		name,
+		result,
+		performance.now() - start
+	);
 
 	return result?.[0] ?? null;
 }
@@ -102,8 +106,10 @@ export function showHintStats() {
 
 export function resetHintStats() {
 	console.log("resetHintStats");
-	hintStats.functions = {};
-	hintStats.types = {};
+	// hintStats.functions = {};
+	// hintStats.types = {};
+	useHintStore.getState().resetHintStats();
+
 }
 
 export function runHints() {
@@ -112,7 +118,7 @@ export function runHints() {
 	//var result;
 
 	initCounts();
-	console.log("hints.js", cells.length)
+	//console.log("hints.js", cells.length)
 
 	let hint;
 
@@ -126,7 +132,6 @@ export function runHints() {
 	if (hint = tryHint("pointingPairsRowCol", pointingPairsRowCol)) return hint;
 	if (hint = tryHint("hiddenPairs", hiddenPairs)) return hint;
 	if (hint = tryHint("hiddenTriples", hiddenTriples)) return hint;
-	if (hint = tryHint("quads", quads)) return hint;
 	if (hint = tryHint("uniqueRectangles", uniqueRectangles)) return hint;
 	if (hint = tryHint("emptyRectangles", emptyRectangles)) return hint;
 	if (hint = tryHint("suedecoq", suedecoq)) return hint;
@@ -138,6 +143,7 @@ export function runHints() {
 	if (hint = tryHint("WWing", WWing)) return hint;
 	if (hint = tryHint("WXYZWing", WXYZWing)) return hint;
 	if (hint = tryHint("swordfish", swordfish)) return hint;
+	if (hint = tryHint("quads", quads)) return hint;
 	if (hint = tryHint("colors", colors)) return hint;
 	if (hint = tryHint("colorWing", colorWing)) return hint;
 	if (hint = tryHint("als", als)) return hint;

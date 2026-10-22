@@ -1,5 +1,6 @@
 import "@sudoku/common/styles/borders.css";
-import { cellStore, useCellActions, useGameStateStore, useHintStore } from "@sudoku/common/store/store";
+import { cellStore, useCellActions, useGameStateStore } from "@sudoku/common/store/store";
+import { useHintStore } from "@sudoku/common/store/hintStore";
 import { RCS, bstyles } from "@sudoku/common/utilities/constants";
 import { getRemainingValues } from "@sudoku/common/utilities/utilities";
 import { cellInConjugatePair, cellInBivaluePair } from '@sudoku/common/hints/conjugates';
@@ -25,7 +26,7 @@ function Candidates({ix}) {
 	const clist = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 	return (
-		<div className={"grid grid-cols-3 h-full leading-none py-0.5" + bg}>
+		<div className={"grid grid-cols-3 border-black h-full leading-none py-0.5" + bg}>
 			{clist.map((c) => {
 				var val = c.toString();
 				var cn = " font-normal";
@@ -363,7 +364,7 @@ export default function GameGrid() {
 	return (
 		<div className="">
 			<CandidatesModal onConfirm={modalConfirm} />
-			<div className="px-1 grid grid-cols-3 w-full">
+			<div className="grid grid-cols-3 w-full h-100">
 				{
 					index.map((y, ix) => { return (<Grid9 key={ix} y={y} />) })
 				}

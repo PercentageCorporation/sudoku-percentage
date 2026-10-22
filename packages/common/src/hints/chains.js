@@ -1,7 +1,7 @@
 import { includesAny } from './hints';
 import { cells, findSeenTargets2, findTargetsSeenByAll, findTargets } from './hints';
 import { sameRow2, sameCol2, canSeeEachOther, sameHouse } from './hints';
-import { Rows, Cols, Squares, cellRow, cellCol, cellSquare, RCS } from '@sudoku/common/utilities/constants';
+import { Rows, Cols, Squares } from '@sudoku/common/utilities/constants';
 import { getConjugatePairs, getConjugatePairsForValue, getBivaluePairs } from "./conjugates";
 
 //*****************************************************************************
@@ -65,7 +65,7 @@ function findNextXLink(cvp, cix) {
 		if (epx === ep0 || epx === ep1 || epz === ep0 || epz === ep1) continue;
 		if (endpointsInPath(cix, ep0, ep1)) continue;
 		var curix = i;
-		if (sameRow2(epx, ep0)) chain.push([i, ep0, ep1, cix, []]);
+		if (sameRow2(epx, ep0) >= 0) chain.push([i, ep0, ep1, cix, []]);
 		else if (sameRow2(epx, ep1) >= 0) chain.push([i, ep1, ep0, cix, []]);
 		else if (sameCol2(epx, ep0) >= 0) chain.push([i, ep0, ep1, cix, []]);
 		else if (sameCol2(epx, ep1) >= 0) chain.push([i, ep1, ep0, cix, []]);

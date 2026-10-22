@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { cellStore, useHintStore, useCellActions, useGameStateStore } from "@sudoku/common/store/store";
+import { cellStore, useCellActions, useGameStateStore } from "@sudoku/common/store/store";
+import { useHintStore } from "@sudoku/common/store/hintStore";
 import { validateMove, formatSolution } from "@sudoku/common/utilities/utilities";
 import { runHints, showHintStats  } from '@sudoku/common/hints/hints';
-//import Spinner from "./Spinner";
 
 export default function PlayMenu() {
 	const { selectedValue, selectedCell, setSelectedValue, clearSelectedValue, clearSelectedCell, numbersUsed, setShowBivalue, setShowConjugates, resetState } = useGameStateStore();
@@ -12,10 +11,10 @@ export default function PlayMenu() {
 	const { checkGameSolved, calcNumbersUsed } = useCellActions();
 	const { updateCandidates, addNonCandidate } = useCellActions();
 	const { gameComplete, gameId } = cellStore();
+
 	const { hint, getHint, setHint, setHintMsg, resetHint } = useHintStore();
 	const [message, setMessage] = useState(gameComplete ? "Game Complete" : null);
 
-	const navigate = useNavigate();
 	const selection = [1,2,3,4,5,6,7,8,9];
 
 	useEffect(() => {
@@ -38,11 +37,31 @@ export default function PlayMenu() {
 		}
 	},[gameComplete])
 
+	const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+	async function doAllHints(e) {
+		e.preventDefault();
+		console.log("doAllHints");
+		setHintMsg("Starting");
+		let h = runHints();
+		while (h !== null) {
+			setHintMsg(h.msg);
+			setHint(h);
+			processHint(h);
+			await delay(300);
+			h = runHints();
+		}
+	}
+
 	function doHint(e) {
 		e.preventDefault();
 		let h = getHint();
 		if (!h) return;
 		console.log("doHint", h);
+		processHint(h);
+	}
+
+	function processHint(h) {
 		let elims = [];
 		let type = h.type;
 		let targetcells = h.targetcells;
@@ -53,7 +72,7 @@ export default function PlayMenu() {
 			let cix = targetcells[0];
 			let v = values[0];
 			setCellValue(cix, v);
-			elims.push([cix, v, true]);
+			elims.push(['v', cix, v, true]);
 		} else if (targetlist) {
 			targetlist.forEach((t) => {
 				let tcls = t[0];
@@ -61,7 +80,7 @@ export default function PlayMenu() {
 				tcls.forEach((tc) => {
 					vals.forEach((v) => {
 						let changed = addNonCandidate(tc, v);
-						elims.push([tc, v, changed]);
+						elims.push(['c', tc, v, changed]);
 					})
 				})
 			})
@@ -70,7 +89,7 @@ export default function PlayMenu() {
 			targets.forEach((cix) => {
 				values.forEach((value) => {
 					let changed = addNonCandidate(cix, value);
-					elims.push([cix, value, changed]);
+					elims.push(['c', cix, value, changed]);
 				})
 			})
 		}
@@ -78,8 +97,9 @@ export default function PlayMenu() {
 		clearSelectedCell();
 
 		//let log = (type.startsWith('forced2')) ? [type,  h.depth, h.levels, h.contradictions ] : [type];
-		let log = [type, elims];
-		addSolutionLog(log);
+		useHintStore.getState().addHintHistory(h, elims);
+		//let log = [type, elims];
+		//addSolutionLog(log);
 
 		if (!validateGame()) {
 			setMessage("Invalid Board");
@@ -97,15 +117,23 @@ export default function PlayMenu() {
 			} else {
 				// solved ?
 				console.log("SOLVED");
-				console.log(solutionLog);
-				showHintStats();
+				//console.log(solutionLog);
+				//showHintStats();
+				const stats = useHintStore.getState().getHintStats();
+
+				console.table(stats.functions);
+				console.table(stats.types);
 			}
 		}
 	}
 
 	function showHint(e) {
 		e.preventDefault();
-		//console.log("showHint", hint);
+		console.log("showHint", hint, gameComplete);
+		if (gameComplete) {
+			setHintMsg("Game Over");
+			return;
+		}
 		resetState();
 		var h = runHints();
 		if (!h) {
@@ -137,7 +165,7 @@ export default function PlayMenu() {
 		console.log("conjugates", selectedValue);
 		setShowBivalue(false);
 		setShowConjugates(true);
-		navigate('/');
+		//navigate('/');
 	}
 
 	function doSelect(s) {
@@ -258,20 +286,25 @@ export default function PlayMenu() {
 					onClick={(e) => conjugates(e)} >
 				CP
 				</div>
-				<div className="flex flex-row">
-					<div
-					className="flex justify-center size-8 text-xl font-bold rounded-md bg-green-400 hover:cursor-pointer "
+				<div
+					className="flex justify-center mr-4 size-8 text-xl font-bold rounded-md bg-green-400 hover:cursor-pointer "
 					onClick={(e) => showHint(e)} >
 					?
-					</div>
-					{ hint.msg &&
+				</div>
+				<div
+					className="flex justify-center mr-4 size-8 text-xl font-bold rounded-md bg-green-400 hover:cursor-pointer "
+					onClick={(e) => doAllHints(e)} >
+					&gt;&gt;
+				</div>
+				</div>
+			<div>
+				<div className="flex flex-row h-8 mt-4">
 					<div
-						className="ml-4 px-2 flex items-center bg-green-300 rounded-md text-sm"
+						className="px-2 flex items-center bg-green-300 rounded-md text-normal font-semibold hover:cursor-pointer"
 						onClick={(e)=>doHint(e)}
 						>
-						{hint.msg}
+						{`${hint.msg ? hint.msg : gameComplete ? 'Game Over' : 'No Hint'}`}
 					</div>
-					}
 				</div>
 			</div>
 			<div className="mt-2 flex flex-row items-center">
