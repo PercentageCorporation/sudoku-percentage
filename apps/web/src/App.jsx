@@ -15,7 +15,10 @@ export default function App() {
 				<div className='ml-4 text-3xl font-bold text-white'>
 					The Sudoku Percentage
 				</div>
-			</div>
+				<div className='ml-25 text-xl font-semibold text-white'>
+					https://sudoku.percentage.net
+				</div>
+				</div>
 			<div className="h-full min-h-0 bg-slate-100">
 				{screen === 'game' &&
 					<WebGame key={`game-${refresh}`} />

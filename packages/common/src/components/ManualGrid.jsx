@@ -444,8 +444,8 @@ export default function ManualGrid() {
 	return (
 		<div className="max-w-[412px] ">
 			<div>
-			{ seedGame && <SeedGameModal title="Paste Game" onConfirm={seedConfirm} onCancel={seedCancel}/> }
-			{ addSolution && <SeedGameModal title="Paste Solution" onConfirm={addSolutionConfirm} onCancel={addSolutionCancel}/> }
+			{ seedGame && <SeedGameModal titleg="Paste Game" titles="Paste Solution" onConfirm={seedConfirm} onCancel={seedCancel}/> }
+			{ addSolution && <SeedGameModal titles="Paste Solution" onConfirm={addSolutionConfirm} onCancel={addSolutionCancel}/> }
 			{ loadSavedGame && <LoadGameModal onConfirm={loadConfirm} onCancel={loadCancel}/> }
 			{ saveManGame && <SaveGameModal description={manDescription} onConfirm={saveConfirm} onCancel={saveCancel}/> }
 			{ deleteId && <ConfirmModal title={deleteId.title} content={deleteId.content} onConfirm={deleteConfirm} onCancel={deleteCancel}/> }
