@@ -278,7 +278,7 @@ export default function ManualGrid() {
 			// here we tell the reader what to do when it's done reading...
 			reader.onload = readerEvent => {
 				var gamecells = readerEvent.target.result; // this is the content!
-				if (gamecells.length != 81) {
+				if (gamecells.length !== 81) {
 					alert("Import not correct length");
 					return;
 				}
@@ -357,8 +357,8 @@ export default function ManualGrid() {
 		setAddSolution(false);
 	}
 
-	function addSolutionConfirm(solution) {
-		console.log("seedGame");
+	function addSolutionConfirm(game, solution) {
+		console.log("addSolutionConfirm");
 		console.log(solution);
 		setAddSolution(false);
 		var grid = linearTextToGrid(solution);

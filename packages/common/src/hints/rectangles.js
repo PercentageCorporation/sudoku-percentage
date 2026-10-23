@@ -582,7 +582,7 @@ export function uniqueRectangles() {
 
 		// Type 5 has two diagonal cells or three cells with one extra candidate that is the same
 		// any other matching candidate that can see all those cells can be eliminated
-		if (((diagonal && oneextra === 2 && numextras === 3) || (oneextra === 3 && numextras === 3)) && oneextras.length === 1) {
+		if (((diagonal && oneextra === 2 && numextras === 2) || (oneextra === 3 && numextras === 3)) && oneextras.length === 1) {
 			// two or three cells with the same extra candidate
 			//console.log("Type5", oneextra, numextras, extraextras, extras, oneextras);
 			// Type 2 and 5 rectangles
@@ -592,7 +592,7 @@ export function uniqueRectangles() {
 			if (oneextra === 2)
 				var tgts = findSeenTargets2(val, cx0, cx1);
 			else {
-				var cx2 = extras[1];
+				var cx2 = extras[2];
 				var tgts = findSeenTargets3(val, cx0, cx1, cx2);
 			}
 			//console.log(val, cx0, cx1, tgts);

@@ -27,13 +27,13 @@ export function biforce() {
 	//console.log("elim1", determination);
 	let result = determination[0];
 	if (result === INVALID) {
-		console.log("INVALID HINT", determination);
+		//console.log("INVALID HINT", determination);
 		let hint = makeForcingHint(determination);
 		return [hint]
 	}
 
 	if (result === SOLVED) {
-		console.log("SOLVED HINT", determination);
+		//console.log("SOLVED HINT", determination);
 		let hint = makeForcingHintSolved(determination);
 		return [hint];
 	}
@@ -55,11 +55,11 @@ function findElimination(state, candidates) {
 		const next = structuredClone(state);
 		next[cix] = value;
 		explorechain.push([level, cix, value]);
-		console.log("next **********", cix, value, candidates[cix]);
+		//console.log("next **********", cix, value, candidates[cix]);
 		const result = explore(next, level);
 
 		let chainlen = explorechain.length;
-		console.log("chain", chainlen, maxlevel, numinvalid);
+		//console.log("chain", chainlen, maxlevel, numinvalid);
 		if (result === INVALID) {
 			return [INVALID, cix, value, chainlen, maxlevel, numinvalid];
 		}
@@ -133,7 +133,7 @@ function chooseStartingCell(can) {
 	//console.log("cp", cpairs);
 	//if (cpairs.length > 0) return cpairs[1][1][1];
 	let strongs = strongLinks(cpairs);
-	console.log("strongs", strongs);
+	//console.log("strongs", strongs);
 	if (strongs.length > 0) return strongs[0][0];
 
 	// no 2s, go for 3s

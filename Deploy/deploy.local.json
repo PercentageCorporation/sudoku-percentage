@@ -1,0 +1,13 @@
+{
+  "ssh_host": "spectrum",
+  "pwa": {
+    "local_path": "/home/james/Development/Games/Sudoku/sudoku/apps/pwa/build",
+    "remote_path": "/var/www/games/sudokupwa",
+    "restartCaddy": true
+  },
+  "web": {
+    "local_path": "/home/james/Development/Games/Sudoku/sudoku/apps/web/build",
+    "remote_path": "/var/www/games/sudoku",
+    "restartCaddy": true
+  }
+}

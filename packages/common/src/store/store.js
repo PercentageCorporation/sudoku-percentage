@@ -438,7 +438,7 @@ export const cellStore = create(
 
 				restoreState: () => {
 					set((state) => {
-						if (state.saved != null) {
+						if (state.saved !== null) {
 							console.log("restoreState")
 							const cells = [...state.saved]
 							return {
@@ -603,7 +603,7 @@ export const cellStore = create(
 						}
 
 						const cells = [...state.cells]
-						const noncandidates = cells[ix].noncandidates.filter(v != value)
+						const noncandidates = cells[ix].noncandidates.filter(v !== value)
 						const activecandidates = cells[ix].candidates.filter(c => noncandidates.indexOf(c) < 0);
 						cells[ix] = {
 							...cells[ix],

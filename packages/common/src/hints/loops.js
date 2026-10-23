@@ -353,7 +353,7 @@ export function loops() {
 		let  bvep = bp[0]
 		let  bvac = bp[1];
 		// make the first link
-		console.log("bv0start", bp);
+		//console.log("bv0start", bp);
 		chain1 = [];	// reset the chain
 		let link = [bvep, bvac,  bvac[0], 0, 'x', -1, [1]];
 		chain1.push(link);
@@ -365,12 +365,12 @@ export function loops() {
 		let pathsa = getAICPaths(chain1);
 		//allpaths.push.apply(allpaths, pathsa);
 		//console.log("pathsa", pathsa);
-		console.log("bv0end", pathsa.length);
+		//console.log("bv0end", pathsa.length);
 		loops = processPaths(pathsa);
 		if (loops.length > 0) return loops;
 
 		// make the alternate link
-		console.log("bv1start", bp);
+		//console.log("bv1start", bp);
 		chain1 = [];	// reset the chain
 		link = [bvep, bvac,  bvac[1], 0, 'x', -1, [1]];
 		chain1.push(link);
@@ -382,7 +382,7 @@ export function loops() {
 		let pathsb = getAICPaths(chain1);
 		//allpaths.push.apply(allpaths, pathsb);
 		//console.log("pathsb", pathsb);
-		console.log("bv1end", pathsb.length);
+		//console.log("bv1end", pathsb.length);
 		loops = processPaths(pathsb);
 		if (loops.length > 0) return loops;
 	}
@@ -406,7 +406,7 @@ export function loops() {
 		//if (sep0 !== 75 && sep1 !== 75) continue;	// TEST
 		//if (sep1 !== 75) continue;	// TEST
 		// make the first link
-		console.log("cp0start", cp);
+		//console.log("cp0start", cp);
 		chain1 = [];	// reset the chain
 		let link = [sep0, sac0,  valstart, 0, 'x', -1, [1]];
 		chain1.push(link);
@@ -418,12 +418,12 @@ export function loops() {
 		let pathsa = getAICPaths(chain1);
 		//allpaths.push.apply(allpaths, pathsa);
 		//console.log("pathsa", cv, pathsa);
-		console.log("cp0end", pathsa.length);
+		//console.log("cp0end", pathsa.length);
 		loops = processPaths(pathsa);
 		if (loops.length > 0) return loops;
 
 		// make the alternate link
-		console.log("cp1start", cp);
+		//console.log("cp1start", cp);
 		chain1 = [];	// reset the chain
 		link = [sep1, sac1,  valstart, 0, 'x', -1, [1]];
 		chain1.push(link);
@@ -434,7 +434,7 @@ export function loops() {
 		let pathsb = getAICPaths(chain1);
 		//allpaths.push.apply(allpaths, pathsb);
 		//console.log("pathsb", sep1, pathsb, chain1);
-		console.log("cp1end", pathsb.length);
+		//console.log("cp1end", pathsb.length);
 		loops = processPaths(pathsb);
 		if (loops.length > 0) return loops;
 	}
@@ -649,9 +649,9 @@ function processPaths(paths) {
 
 	}
 
-	console.log("loophints", loophints);
+	//console.log("loophints", loophints);
 	if (loophints.length > 0) return loophints;
-	console.log("hints", hints);
+	//console.log("hints", hints);
 	return hints;
 
 }

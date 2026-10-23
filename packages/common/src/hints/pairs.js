@@ -1,5 +1,5 @@
-import { Rows, Cols, Squares, cellRow, cellCol, cellSquare, sqRowCells, sqColCells, sqRows012, sqCols012, RCS } from '@sudoku/common/utilities/constants';
-import { findTargets, findInternalTargets, includesAll, includesAny } from './hints';
+import { Rows, Cols, Squares } from '@sudoku/common/utilities/constants';
+import { findTargets, findInternalTargets, includesAll } from './hints';
 import { cells, vRows, vCols, vSqs } from './hints';
 
 
@@ -40,56 +40,6 @@ function possiblePairs(pp) {
 		}
 	}
 	return ppp;
-}
-
-function includesPair(arr, v0, v1) {
-	for (var i=0; i<arr.length; ++i) {
-		if (arr[i] === v0 || arr[i] === v1) return true;
-	}
-	return false;
-}
-
-// find value that only occurs once in an array
-function hasSingleOccurance(arr) {
-	var single = null;
-	var singleCount = 0;
-	for (var i=0; i<arr.length; ++i) {
-		if (arr[i] > 0 ) {
-			if (single != null) return null;
-			single = i;
-			singleCount = arr[i];
-		}
-	}
-	if (single != null && singleCount < 2) return null;
-	return single;
-}
-
-function hasSingleValueRC(ar) {
-	//console.log(ar);
-	// check that row only has a single value
-	var single = -1;
-	for (var i=0; i<9; ++i) {
-		if (ar[i] > 0) {
-			if (single > -1) return -1
-				single = i;
-			//console.log("single:", i, ar[i], single);
-		}
-	}
-	return single;
-}
-
-// get the cell numbers of all the cells in the square with the given value
-function getSquareValueCells(value, sqix) {
-	var svc = [];
-	var sq = Squares[sqix]; // get the square cells
-	for (var i=0; i<9; ++i) {
-		var cix = sq[i];	// cell index in square
-		var c = cells[cix];
-		if (c.value === 0 && c.activecandidates.includes(value)) {
-			svc.push(cix);
-		}
-	}
-	return svc;
 }
 
 // find pairs in the row/col/sq array and record the index of where they were found;
@@ -142,26 +92,27 @@ export function nakedPairs() {
 	var npHints = [];
 	// for each pair, count the number of occurances in the row
 	// np: rcs, index, rcs, [cri], cells, vals
-	for (var i=0; i<np.length; ++i) {
-		var npi = np[i];
-		var rcs = npi[0];
-		var rcsix = npi[1];
-		var cls = npi[3];
-		var vals = npi[4];
+	for (const npi of np) {
+		const rcs = npi[0];
+		const rcsix = npi[1];
+		const cls = npi[3];
+		const vals = npi[4];
 
-		if (rcs === 'r') {
-			var tgts = findTargets(Rows[rcsix], vals, cls);
-			if (tgts) npHints.push(['row', rcsix, cls, vals, tgts]);
-		} else if (rcs === 'c') {
-			var tgts = findTargets(Cols[rcsix], vals, cls);
-			//console.log("ct", rcsix, cls, vals, tgts);
-			if (tgts) npHints.push(['col', rcsix, cls, vals, tgts]);
-			break;
-		} else if (rcs === 's') {
-			var tgts = findTargets(Squares[rcsix], vals, cls);
-			if (tgts) npHints.push(['square', rcsix, cls, vals, tgts]);
-			break;
-		}
+		const house =
+		rcs === 'r' ? Rows[rcsix] :
+		rcs === 'c' ? Cols[rcsix] :
+		Squares[rcsix];
+
+		const tgts = findTargets(house, vals, cls);
+
+		if (!tgts || tgts.length === 0) continue;
+
+		const direction =
+		rcs === 'r' ? 'row' :
+		rcs === 'c' ? 'col' : 'square';
+
+		npHints.push([direction, rcsix, cls, vals, tgts]);
+		break;
 	}
 
 	//console.log("npHints", npHints);
@@ -192,7 +143,7 @@ export function nakedPairs() {
 		break;
 	}
 
-	console.log("nakedPairs", nakedPairs);
+	//console.log("nakedPairs", nakedPairs);
 	if (nakedPairs.length === 0) return null;
 	return nakedPairs;
 }
@@ -287,285 +238,8 @@ export function hiddenPairs() {
 	}
 
 	if (hiddenPairs.length === 0) return null;
-	console.log("hiddenPairs",hiddenPairs)
+	//console.log("hiddenPairs",hiddenPairs)
 	return hiddenPairs;
 }
 
-
-//*****************************************************************************
-// pointingPairsSquare
-
-// find pointing pairs in square
-export function pointingPairsSquare() {
-	// find pairs in squares
-	const ppsHints = [];
-
-	for (var value=1; value<10; ++value) {
-		// for each row, count the number of times a value appears in a square
-		for (var r=0; r<9; ++r) {
-			var row = Rows[r];
-			var sqCounts = [0,0,0,0,0,0,0,0,0];
-			var sqCells = [[],[],[],[],[],[],[],[],[]];
-			// for each cell in the row
-			for (var c=0; c<9; ++c) {
-				var cix = row[c];	// cell index in square
-				var cel = cells[cix];
-				if (cel.value === 0 && cel.activecandidates.includes(value)) {
-					var sq = cellSquare[cix];
-					sqCounts[sq]++;
-					sqCells[sq].push(cix);
-				}
-			}
-			var sqix = hasSingleOccurance(sqCounts);
-			// sqix only occurs in one square, therefore it is a candidate for a pointing pair
-			if (sqix != null) {
-				var vc = sqCounts[sqix];	// number of times value occurs in the row
-				var targets = getSquareValueCells(value, sqix);	// number of times the value occurs in the square
-				//console.log("sqix",value, r, sqix, vc, targets, sqCounts);
-
-				var vscount = targets.length;
-				if (vscount > vc) {
-					// we have a candidate value because there are occurances that could be eliminated
-					var cels = sqCells[sqix];
-					targets = targets.filter((v) => !cels.includes(v));
-
-					//console.log("ppsr", value, r, sqix, vc, vscount, targets, sqCounts);
-					var msg = `Pointing Pair: Cells: ${targets}, Value: ${value}`;
-					var ppsh = {
-						type: "pointingPairSquare",
-						direction: "row",
-						row: r,
-						col: null,
-						square: sqix,
-						cells: cels,
-						values: [value],
-						targets: targets,
-						msg: msg
-					};
-					ppsHints.push(ppsh);
-				}
-			}
-		}
-		for (var cx=0; cx<9; ++cx) {
-			var col = Cols[cx];
-			var sqCounts = [0,0,0,0,0,0,0,0,0];
-			var sqCells = [[],[],[],[],[],[],[],[],[]];
-			// for each cell in the row
-			for (var c=0; c<9; ++c) {
-				var cix = col[c];	// cell index in square
-				var cel = cells[cix];
-				if (cel.value === 0 && cel.activecandidates.includes(value)) {
-					var sq = cellSquare[cix];
-					sqCounts[sq]++;
-					sqCells[sq].push(cix);
-				}
-			}
-			var sqix = hasSingleOccurance(sqCounts);
-			//console.log(sqix, sqCounts);
-			if (sqix != null) {
-				var vc = sqCounts[sqix];
-				var targets = getSquareValueCells(value, sqix);
-				var vscount = targets.length;
-				if (vscount > vc) {
-					// we have a candidate square
-					var cels = sqCells[sqix];
-					targets = targets.filter((v) => !cels.includes(v));
-
-					//console.log("ppsc", value, cx, sqix, vc, vscount, targets, sqCounts);
-					var msg = `Pointing Pairs: Cells: ${targets}, Value: ${value}`;
-					var ppsh = {
-						type: "pointingPairSquare",
-						direction: "col",
-						row: null,
-						col: cx,
-						square: sqix,
-						cells: cels,
-						values: [value],
-						targets: targets,
-						msg: msg
-					};
-					ppsHints.push(ppsh);
-					break;
-				}
-			}
-		}
-		if (ppsHints.length > 0) break;
-	}
-
-	//console.log("ppsHints", ppsHints);
-
-	if (ppsHints.length === 0) return null;
-	return ppsHints;
-}
-
-
-//*****************************************************************************
-// pointingPairsRowCol
-
-// if a value only appears in the same row or column of a square
-// then that value can be eliminated from the remaining row or column cells outside the square
-export function pointingPairsRowCol() {
-	var ppCandidates = [];
-	// for each square
-	for (var sq=0; sq<9; ++sq) {
-		var candids = [];
-
-		// for each value
-		for (var value=1; value<10; ++value) {
-			var vCellsR = [[],[],[],[],[],[],[],[],[],[]];	// row cells that the value appears in
-			var vCellsC = [[],[],[],[],[],[],[],[],[],[]];	// col cells that the value appears in
-			// for each cell with the candidate value get the row and col
-			// for each cell in the square
-			// count the occurances in each row/col
-			var sqCells = Squares[sq];
-			for (var c=0; c<9; ++c) {
-				var cix = sqCells[c];
-				var sc = cells[cix];
-				if (sc.value > 0) continue;
-				var crow = cellRow[cix];
-				var ccol = cellCol[cix];
-				if (sc.activecandidates.includes(value)) {
-					vCellsR[crow].push(cix);
-					vCellsC[ccol].push(cix);
-				}
-			}
-
-			var hasTargets = false;
-			var targets = [];
-			var singleRow = hasSingleValueRC(vRows);
-			var singleCol = hasSingleValueRC(vCols);
-			// if there is a single row, see if there is anyting to eliminate outside the square
-			if (singleRow > -1) {
-				var row = Rows[singleRow];
-				for (var r=0; r<9; ++r) {
-					var cix = row[r];
-					var rsq = cellSquare[cix];
-					if (sq === rsq ) continue;	// skip cells in our square
-					var cel = cells[cix];
-					if (cel.value === 0 && cel.activecandidates.includes(value)) {
-						hasTargets = true;
-						targets.push(cix);
-					}
-				}
-			} else if (singleCol > -1) {
-				var col = Cols[singleCol];
-				for (var c=0; c<9; ++c) {
-					var cix = col[c];
-					var csq = cellSquare[cix];
-					if (sq === csq ) continue;	// skip cells in our square
-					var cel = cells[cix];
-					if (cel.value === 0 && cel.activecandidates.includes(value)) {
-						hasTargets = true;
-						targets.push(cix);
-					}
-				}
-			}
-
-			// skip singletons (should not happen)
-			if (hasTargets) {
-				var sc = [ value, singleRow, singleCol, sq, vRows[singleRow], vCellsR[singleRow], vCols[singleCol], vCellsC[singleCol], targets ];
-				console.log("sc",sc)
-				candids.push(sc);
-			}
-		}
-
-		//console.log("pp candids", candids);
-
-		var prevRow = -1;
-		var prevCol = -1;
-		var prevSq = -1;
-		var prevSrc = null;
-		var src = null;
-		var val;
-		candids.forEach((can) => {
-			console.log("can", can);
-			val = can[0];
-			var csr = can[1];
-			var csc = can[2];
-			var csq = can[3];
-			//console.log(csr, prevRow, csc, prevCol, csq, prevSq, val);
-			if (prevRow !== csr || prevCol !== csc || prevSq !== csq) {
-				//console.log("notElse", prevSrc)
-				if (prevSrc != null) ppCandidates.push(prevSrc);
-
-				var vrsr =  can[4];		// vRows[singleRow];
-				var vcrsr = can[5];		// vCellsR[singleRow];
-				var vcsc =  can[6];		// vCols[singleCol];
-				var vccsc = can[7];		// vCellsC[singleCol];
-				var targets = can[8];
-				// skip singletons (should not happen)
-				var sc = [val, csq, csr, csc, val]
-				//console.log("sc",sc)
-				if (csr) {
-					//console.log("sr", value, singleRow, vRows);
-					src = {
-						square: csq,
-						row: csr,
-						col: null,
-						count: vrsr,
-						cells: vcrsr,
-						values: [val],
-						targets: targets
-					}
-					//console.log("ppsr", sq, value, singleRow, vRows, vCellsR[singleRow]);
-				}
-				if (csc) {
-					//console.log("sc", value, singleCol, vCols);
-					src = {
-						square: csq,
-						row: null,
-						col: csc,
-						count: vcsc,
-						cells: vccsc,
-						values: [val],
-						targets: targets
-					}
-					//console.log("ppsc", sq, value, singleCol, vCols, vCellsC[singleCol] );
-				}
-
-				prevRow = csr;
-				prevCol = csc;
-				prevSq = csq;
-				prevSrc = src;
-			} else {
-				//console.log("else", prevSrc)
-				if (prevSrc) {
-					prevSrc.values.push(val);
-					prevSrc.targets = Array.from(new Set(prevSrc.targets) || new Set(targets));
-				}
-			}
-		})
-		//console.log("end",prevSrc)
-		if (prevSrc) {
-			ppCandidates.push(src);
-			break;
-		}
-	}
-
-	//console.log("ppCandidates", ppCandidates)
-	var ppHints = [];
-	for (const pp of ppCandidates) {
-		var msg = "Pointing ";
-		msg += pp.cells.length === 3 ? "Triple: " : "Pair: ";
-		msg += pp.row ? `Row: ${pp.row+1}` : "";
-		msg += pp.col ? `Column: ${pp.col+1}` : "";
-		msg += `, Value: ${pp.values}`;
-
-		var h = {
-			type: 'pointingPair',
-			row: pp.row,
-			col: pp.col,
-			square: pp.square,
-			cells: pp.cells,
-			values: pp.values,
-			targets: pp.targets,
-			msg: msg
-		}
-		ppHints.push(h);
-		break;
-	}
-
-	if (ppHints.length === 0) return null;
-	return ppHints;
-}
 

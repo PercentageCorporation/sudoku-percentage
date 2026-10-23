@@ -45,7 +45,7 @@ export default function CandidatesModal({ onConfirm, onCancel }) {
 		e.preventDefault();
 		console.log("handleClick", ix, candidates, noncandidates);
 		if (noncandidates.includes(ix)) {
-			setNoncandidates(noncandidates.filter(c => c != ix));
+			setNoncandidates(noncandidates.filter(c => c !== ix));
 		} else if (candidates.includes(ix)) {
 			if (!noncandidates.includes(ix)) setNoncandidates(noncandidates.concat(ix));
 		}

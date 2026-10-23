@@ -1,11 +1,11 @@
 import { cellStore } from "@sudoku/common/store/store";
 import { useHintStore } from "@sudoku/common/store/hintStore";
-import {Rows, Cols, Squares, cellRow, cellCol, cellSquare, sqRowCells, sqColCells, sqRows012, sqCols012, RCS} from '@sudoku/common/utilities/constants';
+import {Rows, Cols, Squares, cellRow, cellCol, cellSquare, RCS} from '@sudoku/common/utilities/constants';
 import { singletons, singleCounts } from "./singles";
 import { uniqueRectangles, emptyRectangles } from './rectangles';
-import { nakedPairs, pointingPairsRowCol, pointingPairsSquare, hiddenPairs } from "./pairs";
+import { nakedPairs, hiddenPairs } from "./pairs";
 import { nakedTriples, hiddenTriples } from './triples';
-import { als, lockedCandidates1 } from './locked';
+import { als, lockedCandidates1, lockedCandidates2 } from './locked';
 import { XWing, XYWing, XYZWing, WWing } from './wings';
 import { XChain, XYChain } from './chains';
 import { swordfish } from './swordfish';
@@ -121,15 +121,14 @@ export function runHints() {
 	//console.log("hints.js", cells.length)
 
 	let hint;
-
+	if (hint = tryHint("uniqueRectangles", uniqueRectangles)) return hint;
 
 	if (hint = tryHint("singletons", singletons)) return hint;
 	if (hint = tryHint("singleCounts", singleCounts)) return hint;
-	if (hint = tryHint("lockedCandidates1", lockedCandidates1)) return hint;
 	if (hint = tryHint("nakedPairs", nakedPairs)) return hint;
 	if (hint = tryHint("nakedTriples", nakedTriples)) return hint;
-	if (hint = tryHint("pointingPairsSquare", pointingPairsSquare)) return hint;
-	if (hint = tryHint("pointingPairsRowCol", pointingPairsRowCol)) return hint;
+	if (hint = tryHint("lockedCandidates1", lockedCandidates1)) return hint;
+	if (hint = tryHint("lockedCandidates2", lockedCandidates2)) return hint;
 	if (hint = tryHint("hiddenPairs", hiddenPairs)) return hint;
 	if (hint = tryHint("hiddenTriples", hiddenTriples)) return hint;
 	if (hint = tryHint("uniqueRectangles", uniqueRectangles)) return hint;

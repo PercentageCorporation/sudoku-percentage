@@ -1,7 +1,7 @@
-import { Rows, Cols, Squares, RCS } from '@sudoku/common/utilities/constants';
+import { Rows, Cols, Squares, cellSquare, RCS } from '@sudoku/common/utilities/constants';
 import { findTargets } from './hints';
-import { vSqs, sCounts2, sameRow, sameCol } from './hints';
-import { canSeeEachOther, canAllSeeEachOther, findTargetsSeenByAll, findTargetsInHouses, getActiveCandidates, getValuesInCommon, includesAny, includesAll } from './hints';
+import { cells, vSqs, sameRow, sameCol } from './hints';
+import { canSeeEachOther, canAllSeeEachOther, findTargetsSeenByAll, findTargetsInHouses, getActiveCandidates, getValuesInCommon, includesAny } from './hints';
 
 
 //*****************************************************************************
@@ -13,12 +13,6 @@ import { canSeeEachOther, canAllSeeEachOther, findTargetsSeenByAll, findTargetsI
 // 	[1, 2, 3, 4]
 // 	];
 
-function isALS(als) {
-	const union = new Set(als.flat());
-	const isALS = union.size === als.length + 1;
-	return isALS;
-}
-
 // ax: [ [ac0], [ac1], ... ]
 // return a list of unique candidates from the ac lists
 function getUnique(ax) {
@@ -26,15 +20,6 @@ function getUnique(ax) {
 	ax.forEach(a => a.forEach(s.add, s));
 	return Array.from(s);
 }
-
-function allIncluded(ax) {
-	var allincluded = true;
-	var maxcandidates = ax.length + 1;
-	ax.forEach(a => {if (a.length !== maxcandidates) allincluded = false;});
-	if (allincluded) console.log("allincluded", ax);
-	return allincluded;
-}
-
 // get all unsolved cells in a house that have candidates
 // return an array of cells with their candidates
 // and an array of all candidates in the house
@@ -87,7 +72,6 @@ function candidateValueCells(val, cls0, cls1 ) {
 // find all ALS combinations
 function findALS(arr) {
 	var als = [];
-	var alsall = [];	// all cells have all candidates
 	var ghc = getHouseCells(arr);
 	var hc = ghc[0];		// cells in the house
 	var allac = ghc[1];		// all candidates in the thouse
@@ -370,7 +354,7 @@ export function lockedCandidates1() {
 		//console.log(dir,trc0,cls)
 
 		var h = {
-			type: 'locked',
+			type: 'locked1',
 			row: rcs === 'r' ? rcsix : null,
 			col: rcs === 'c' ? rcsix : null,
 			square: sq,
@@ -389,12 +373,151 @@ export function lockedCandidates1() {
 	return lchints;
 }
 
-export function lockedCandidates2() {
-	var locked = [];
 
-	// as far as I can tell, locked candidates type 2 are the same as pointing pairs in a square
+//*****************************************************************************
+// lockedCandidates2
 
-	if (locked.length === 0) return null;
-	console.log("locked",locked);
-	return locked;
+// find value that only occurs once in an array
+function hasSingleOccurance(arr) {
+	var single = null;
+	var singleCount = 0;
+	for (var i=0; i<arr.length; ++i) {
+		if (arr[i] > 0 ) {
+			if (single !== null) return null;
+			single = i;
+			singleCount = arr[i];
+		}
+	}
+	if (single !== null && singleCount < 2) return null;
+	return single;
 }
+
+// get the cell numbers of all the cells in the square with the given value
+function getSquareValueCells(value, sqix) {
+	var svc = [];
+	var sq = Squares[sqix]; // get the square cells
+	for (var i=0; i<9; ++i) {
+		var cix = sq[i];	// cell index in square
+		var c = cells[cix];
+		if (c.value === 0 && c.activecandidates.includes(value)) {
+			svc.push(cix);
+		}
+	}
+	return svc;
+}
+
+
+export function lockedCandidates2() {
+	// find values in squares
+	const ppsHints = [];
+
+	for (var value=1; value<10; ++value) {
+		// for each row, count the number of times a value appears in a square
+		for (var r=0; r<9; ++r) {
+			var row = Rows[r];
+			var sqCounts = [0,0,0,0,0,0,0,0,0];
+			var sqCells = [[],[],[],[],[],[],[],[],[]];
+			// for each cell in the row
+			let valcount = 0;
+			for (var c=0; c<9; ++c) {
+				var cix = row[c];	// cell index in square
+				var cel = cells[cix];
+				if (cel.value === 0 && cel.activecandidates.includes(value)) {
+					var sq = cellSquare[cix];
+					sqCounts[sq]++;
+					sqCells[sq].push(cix);
+					++valcount;
+				}
+			}
+			if (valcount === 0) continue;
+
+			var sqix = hasSingleOccurance(sqCounts);
+			// sqix only occurs in one square, therefore it is a candidate for a locked candidate
+			if (sqix !== null) {
+				var vc = sqCounts[sqix];	// number of times value occurs in the square in the row
+				var targets = getSquareValueCells(value, sqix);	// get the cells that the value is in
+				var vscount = targets.length;
+				//console.log("sqix",value, r, sqix, vc, pcells, sqCounts);
+				if (vscount > vc) {
+					let cels = sqCells[sqix];
+					targets = targets.filter(c => !cels.includes(c));
+					//console.log("ppsr", value, r, sqix, vc, vscount, targets, sqCounts);
+					if (targets.length > 0) {
+						var msg = `Locked 2: Cells: ${cels}, Value: ${value}, Targets: ${targets}`;
+						var ppsh = {
+							type: "locked2",
+							direction: "row",
+							row: r,
+							col: null,
+							square: sqix,
+							cells: cels,
+							values: [value],
+							targets: targets,
+							msg: msg
+						};
+						ppsHints.push(ppsh);
+						return ppsHints;
+					}
+				}
+				continue;
+			}
+		}
+
+		// do it for the columns
+		for (var cx=0; cx<9; ++cx) {
+			var col = Cols[cx];
+			var sqCounts = [0,0,0,0,0,0,0,0,0];
+			var sqCells = [[],[],[],[],[],[],[],[],[]];
+			// for each cell in the row
+			let valcount = 0;
+			for (var c=0; c<9; ++c) {
+				var cix = col[c];	// cell index in square
+				var cel = cells[cix];
+				if (cel.value === 0 && cel.activecandidates.includes(value)) {
+					var sq = cellSquare[cix];
+					sqCounts[sq]++;
+					sqCells[sq].push(cix);
+					++valcount;
+				}
+			}
+			if (valcount === 0) continue;
+
+			var sqix = hasSingleOccurance(sqCounts);
+			//console.log(sqix, sqCounts);
+			if (sqix !== null) {
+				var vc = sqCounts[sqix];
+				var targets = getSquareValueCells(value, sqix);	// get the cells that the value is in
+				var vscount = targets.length;
+
+				if (vscount > vc) {
+					let cels = sqCells[sqix];
+					targets = targets.filter(c => !cels.includes(c));
+					//console.log("ppsc", value, cx, sqix, vc, vscount, targets, sqCounts);
+					if (targets.length > 0) {
+						var msg = `Locked 2: Cells: ${cels}, Value: ${value}, Targets: ${targets}`;
+						var ppsh = {
+							type: "locked2",
+							direction: "col",
+							row: null,
+							col: cx,
+							square: sqix,
+							cells: cels,
+							values: [value],
+							targets: targets,
+							msg: msg
+						};
+						ppsHints.push(ppsh);
+						return ppsHints;
+					}
+				}
+				continue;
+			}
+		}
+	}
+
+	//console.log("ppsHints", ppsHints);
+
+	if (ppsHints.length === 0) return null;
+	return ppsHints;
+}
+

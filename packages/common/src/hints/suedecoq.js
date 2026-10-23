@@ -69,13 +69,13 @@ function suedecoqII() {
 					if (col === bpcol) continue;
 
 					// found intersection cells
-					console.log("sdcII", bpix, cixi, cixj, cixk, sqac);
+					//console.log("sdcII", bpix, cixi, cixj, cixk, sqac);
 					// look for the other bivalue we need
 
 					// get the other candidates we are looking for
 					let allac = Array.from(sqac);
 					let bp3ac = allac.filter(x => !bpac.includes(x));	// there are three possible candidates
-					console.log("next", bp3ac);
+					//console.log("next", bp3ac);
 
 					// get the row/col we need to search
 					if (row >= 0)
@@ -103,7 +103,7 @@ function suedecoqII() {
 					let xc1 = [xc[0]]
 					bpac.forEach(c => xc0.push(c));	// combine extra candidate for target search
 					acx.forEach(c => xc1.push(c));	// combine extra candidate for target search
-					console.log("FOUND II", cixi, cixj, bpix, cix, xc, xc0, xc1, bp3ac, allac);
+					//console.log("FOUND II", cixi, cixj, bpix, cix, xc, xc0, xc1, bp3ac, allac);
 
 					// look for cells in the square containing any of the square bivalue candidates
 					let tgtss = findTargetsInHouses(xc0, [-1,-1,bpsq], [cixi, cixj, cixk, bpix])
@@ -111,7 +111,7 @@ function suedecoqII() {
 					let house = row >= 0 ? [row,-1,-1] : [-1,col,-1];
 					let tgtsrc = findTargetsInHouses(xc1, house, [cixi, cixj, cixk, cix])
 
-					console.log("tgts", tgtss, xc0, tgtsrc, xc1);
+					//console.log("tgts", tgtss, xc0, tgtsrc, xc1);
 					if (tgtss || tgtsrc) {
 						let targets = tgtss ? [...tgtss] : [];
 						if (tgtsrc) targets = [...targets, ...tgtsrc];
@@ -185,7 +185,7 @@ function suedecoqI() {
 
 					let found = false;
 					if ( includesAll(allc,ack)) {
-						console.log("GOT1", cixi, cixj, cixk, ack, allc);
+						//console.log("GOT1", cixi, cixj, cixk, ack, allc);
 						var stvals = [...ack];	// the values of the square wing cell
 						var wvals = allc.filter(c => !stvals.includes(c))
 						//var rcvals = allc.filter(x => !ack.includes(x));
@@ -195,7 +195,7 @@ function suedecoqI() {
 					} else if (includesAny(allc, ack)) {
 						// got a bivalue cell with one common candidate, which one is missing?
 						var common = ack.filter(c => !allc.includes(c))
-						console.log("MAYBE1", cixi, cixj, cixk, ack, allc, common);
+						//console.log("MAYBE1", cixi, cixj, cixk, ack, allc, common);
 						// look for a trivalue cell that contains the bivalue candidates
 						for (let l=0; l<9; ++l) {
 							let cixl = sqarr[l];
@@ -217,7 +217,7 @@ function suedecoqI() {
 							//var rcvals = allc.filter(x => !ack.includes(x));
 							var sqcells = [cixi, cixj, cixk, cixl];
 							var wcells = [cixk, cixl];
-							console.log("ALMOST1", cixi, cixj, cixk, cixl, ack, acl, allc, other, common);
+							//console.log("ALMOST1", cixi, cixj, cixk, cixl, ack, acl, allc, other, common);
 						}
 					}
 
@@ -225,7 +225,7 @@ function suedecoqI() {
 
 					// at this point we have a valid intersection base
 					// we need to see if there is a valid cell in the row/col
-					console.log("SEARCH1", row, col, sqix, stvals, wvals)
+					//console.log("SEARCH1", row, col, sqix, stvals, wvals)
 					// get the row/col we need to search
 					if (row >= 0)
 						var rcarr = Rows[row];
@@ -247,7 +247,7 @@ function suedecoqI() {
 					}
 					if (!cix) continue;	// no luck
 					wcells.push(cix);
-					console.log("CLOSER1", cixi, cixj, cixk, cix, sqcells, stvals, acx);
+					//console.log("CLOSER1", cixi, cixj, cixk, cix, sqcells, stvals, acx);
 
 					// look for cells in the square containing any of the square  candidates
 					let tgtss = findTargets(sqarr, stvals, sqcells)
@@ -255,7 +255,7 @@ function suedecoqI() {
 					sqcells.push(cix);
 					let tgtsrc = findTargets(rcarr, acx, sqcells)
 
-					console.log("TARGETS1", tgtss, stvals, tgtsrc, acx, wcells);
+					//console.log("TARGETS1", tgtss, stvals, tgtsrc, acx, wcells);
 					if (!tgtss && !tgtsrc) continue;
 
 					let targets = tgtss ? [...tgtss] : [];

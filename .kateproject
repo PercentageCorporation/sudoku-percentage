@@ -1,0 +1,10 @@
+{
+    "name": "Sudoku",
+    "files": [
+        {
+            "directory": ".",
+            "filters": ["*"],
+            "recursive": true
+        }
+    ]
+}

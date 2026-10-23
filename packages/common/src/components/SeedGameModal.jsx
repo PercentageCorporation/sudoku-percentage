@@ -11,6 +11,7 @@ export default function SeedGameModal({ titleg, titles, onConfirm, onCancel }) {
 		var game = "";
 		var solution = "";
 		var element = document.getElementById("game-cells");
+		console.log('game element', element);
 		if (element) {
 			var gamecells = element.value.trim();
 			let ix = gamecells.indexOf(":1:")
@@ -25,6 +26,7 @@ export default function SeedGameModal({ titleg, titles, onConfirm, onCancel }) {
 			}
 		}
 		var element = document.getElementById("solution-cells");
+		console.log('soluiton element', element);
 		if (element) {
 			var solution = element.value.trim();
 		}

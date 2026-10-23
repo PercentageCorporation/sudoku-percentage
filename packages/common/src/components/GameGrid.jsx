@@ -189,19 +189,10 @@ function Cell({ix}) {
 					selMode = 9;
 				break;
 
-			case "pointingPairXX":
-				if (hint.cells.includes(ix))
-					selMode = 3;
-				else if (hint.row === rcs[0] || hint.col === rcs[1]) {
-					if (cell.activecandidates.includes(hint.value)) selMode = 2;
-				}
-				break;
-
-			case "locked":
+			case "locked1":
+			case "locked2":
 			case "nakedPair":
 			case "nakedTriple":
-			case "pointingPair":
-			case "pointingPairSquare":
 			case "hiddenPair":
 			case "hiddenTriple":
 			case "quad":

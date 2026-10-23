@@ -183,7 +183,7 @@ export function XWing() {
 		if (feathers.length > 0) break;
 	}
 
-	console.log("feathers", feathers);
+	//console.log("feathers", feathers);
 
 	var xwings = [];
 
@@ -306,7 +306,7 @@ export function XYWing() {
 	}
 
 	if (xywings.length === 0) return null;
-	console.log("xyHints", xywings);
+	//console.log("xyHints", xywings);
 	return xywings;
 }
 
@@ -345,7 +345,7 @@ export function XYZWing() {
 			//console.log(pix, sq, i,cix1)
 			if (c.value > 0) continue;
 			var w1ac = c.activecandidates;
-			if ( w1ac.length != 2) continue;
+			if ( w1ac.length !== 2) continue;
 			if (!includesAll(pac, w1ac)) continue;	// values not same as pivot
 
 			// found one, look for another
@@ -356,14 +356,14 @@ export function XYZWing() {
 				var c = cells[cix2];
 				if (c.value > 0) continue;
 				var w2ac = c.activecandidates;
-				if ( w2ac.length != 2) continue;
+				if ( w2ac.length !== 2) continue;
 				if (!includesAll(pac, w2ac)) continue;	// must have the pivot values
 				if (includesAll(w1ac, w2ac)) continue;	// cannot be the same values
 				// it must be in the same row/col as the pivot
 				var w2r = cellRow[cix2];	// w2 row
 				var w2c = cellCol[cix2];	// w2 col
 				var w2s = cellSquare[cix2];	// w2 square
-				if (prow != w2r && pcol != w2c ) continue;	// not in same row or col
+				if (prow !== w2r && pcol !== w2c ) continue;	// not in same row or col
 				if (psq === w2s) continue;	// cannot be in same square
 
 				//console.log("pivot", pix, prow, pcol, pac);
@@ -381,7 +381,7 @@ export function XYZWing() {
 					if (tix == cix1) continue;	// skip the wing1 cell
 					var tr = cellRow[tix];
 					var tc = cellCol[tix];
-					if (w2r !== tr && w2c != tc) continue;	// not same row/col
+					if (w2r !== tr && w2c !== tc) continue;	// not same row/col
 					//console.log("tgt?", val, tix, w2r, w2c, tr, tc);
 					var c = cells[tix];
 					if (c.value > 0) continue;
@@ -412,7 +412,7 @@ export function XYZWing() {
 	}
 
 	if (xyzHints.length === 0) return null;
-	console.log("xyzHints", xyzHints);
+	//console.log("xyzHints", xyzHints);
 	return xyzHints;
 }
 
@@ -532,7 +532,7 @@ export function WWing() {
 	})
 
 	if (wwings.length === 0) return null;
-	console.log("wwings", wwings);
+	//console.log("wwings", wwings);
 	return wwings;
 }
 
@@ -679,8 +679,8 @@ function findWing2RC(pivot) {
 				let tgts = findTargetsSeenByAll(Z, Zcells, allcells);
 				if (tgts) {
 					wing2.push([pix, w1ix, cixi, cixj, Z, tgts])
-					console.log("*****************");
-					console.log(pix, w1ix, cixi, cixj, W, X, Y, Z, tgts);
+					//console.log("*****************");
+					//console.log(pix, w1ix, cixi, cixj, W, X, Y, Z, tgts);
 				}
 			}
 		}
@@ -728,7 +728,7 @@ export function WXYZWing() {
 	}
 
 	if (wxyzHints.length === 0) return null;
-	console.log("wxyzHints", wxyzHints);
+	//console.log("wxyzHints", wxyzHints);
 	return wxyzHints;
 }
 

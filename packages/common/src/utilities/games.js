@@ -107,7 +107,7 @@ export function deleteGame(ix) {
 	//console.log("delete game", ix, games);
 	var ngames =  games.length;
 	if (ngames === 0) return null;
-	games.games = games.games.filter((g) => g.number != ix);
+	games.games = games.games.filter((g) => g.number !== ix);
 	var sgames = JSON.stringify(games);
 	//console.log(sgames);
 

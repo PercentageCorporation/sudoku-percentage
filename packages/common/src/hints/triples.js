@@ -138,7 +138,7 @@ export function packTheHouse(house) {
 		if (vc[value] === 1 || vc[value] > 3) {
 			//console.log("value removed",value, vc[value])
 			for (var i=0; i<hlen; i++) {
-				inHouse[i][1] = inHouse[i][1].filter(v => v != value);
+				inHouse[i][1] = inHouse[i][1].filter(v => v !== value);
 			}
 			updated = true;
 		}
