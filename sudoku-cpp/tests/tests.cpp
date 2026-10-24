@@ -28,6 +28,19 @@ int main() {
     static_assert(cellIndex(8,8) == 80);
     static_assert(Rows[0][3] == 9);
     static_assert(Cols[0][3] == 27);
+    static_assert(Squares[5][5] == 50);
+    static_assert(sqRows012[5][2] == 5);
+    static_assert(sqCols012[5][1] == 7);
+    static_assert(sqRowCells[5][1][2] == 50);
+    static_assert(sqColCells[5][2][1] == 50);
+    for (int r = 0; r < 9; ++r)
+        for (int c = 0; c < 9; ++c) {
+            const int i = cellIndex(r,c);
+            assert(Rows[r][c] == i && Cols[c][r] == i);
+            assert(LinearToGrid[r*9+c] == i);
+            assert(cellRow(i) == r && cellCol(i) == c);
+            assert(cellSquare(i) == i/9);
+        }
     Board board = solvedBoard();
     assert(board.valid() && board.solved());
 

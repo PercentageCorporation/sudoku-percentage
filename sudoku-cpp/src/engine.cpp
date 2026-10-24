@@ -98,6 +98,11 @@ std::optional<Hint> HintEngine::findNextHint(const Board& board) const {
     if (auto hint = techniques::xWing(board)) return hint;
     if (auto hint = techniques::uniqueRectangles(board)) return hint;
     if (auto hint = techniques::emptyRectangles(board)) return hint;
+    if (auto hint = techniques::xyWing(board)) return hint;
+    if (auto hint = techniques::xyzWing(board)) return hint;
+    if (auto hint = techniques::wWing(board)) return hint;
+    if (auto hint = techniques::wxyzWing(board)) return hint;
+    if (auto hint = techniques::aic(board)) return hint;
     return std::nullopt;
 }
 

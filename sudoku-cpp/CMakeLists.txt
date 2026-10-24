@@ -3,7 +3,7 @@ project(sudoku_engine LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_library(sudoku_engine STATIC src/engine.cpp src/solver.cpp src/fixture.cpp
-    src/techniques/singles.cpp src/techniques/locked.cpp src/techniques/fish.cpp src/techniques/pairs.cpp src/techniques/triples.cpp src/techniques/rectangles.cpp)
+    src/techniques/singles.cpp src/techniques/locked.cpp src/techniques/fish.cpp src/techniques/pairs.cpp src/techniques/triples.cpp src/techniques/rectangles.cpp src/techniques/loops.cpp src/techniques/wings.cpp)
 target_include_directories(sudoku_engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_options(sudoku_engine PRIVATE -Wall -Wextra -Wpedantic)
 add_executable(sudoku_tests tests/tests.cpp)

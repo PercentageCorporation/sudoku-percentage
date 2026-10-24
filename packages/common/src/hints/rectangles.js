@@ -1,7 +1,7 @@
 import { Rows, Cols, Squares, cellRow, cellCol, cellSquare, sqRows012, sqCols012, RCS } from '@sudoku/common/utilities/constants';
 import { sameRow2, sameCol2 } from './hints';
-import { cells, vSqs } from './hints';
-import { includesAll, includesAny } from './hints';
+import { hintcells, hintcandidates, vSqs } from './hints';
+import { includesAll } from './hints';
 import { rcsContainsValue, findTargets, findSeenTargets2,  findSeenTargets3, findTargetsOnly } from './hints';
 import { getActiveCandidates, getCandidateCells, findCandidatesWithValues, cellHasCandidate } from './hints';
 import { getBivaluePairs } from './conjugates';
@@ -48,9 +48,8 @@ function getCommonHouses(c0, c1) {
 
 // get the active candidates for the cell
 function getCellCandidates(cix) {
-	var cell = cells[cix];
-	if (cell.value > 0) return [];
-	return cell.activecandidates;
+	if (hintcells[cix] > 0) return [];
+	return hintcandidates[cix];
 }
 
 // find a cell not in the same row/col
@@ -277,9 +276,8 @@ export function uniqueRectangles() {
 	bvpp.forEach((p) => {
 		var pac = p[0];
 		for (var i = 0; i < 81; ++i) {
-			var c = cells[i];
-			if (c.value > 0) continue;
-			var ac = c.activecandidates;
+			if (hintcells[i] > 0) continue;
+			var ac = hintcandidates[i];
 			if (ac.length < 3) continue;	// already have the pairs
 			if (!includesAll(ac, pac)) continue;
 			p[1].push(i);

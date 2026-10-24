@@ -1,90 +1,9 @@
-import { Rows, Cols, Squares, cellRow, cellCol, cellSquare, sqRowCells, sqColCells, sqRows012, sqCols012, RCS } from '@sudoku/common/utilities/constants';
-import { cells, findTargets, findInternalTargets, includesAll, includesAny } from './hints';
+import { Rows, Cols, Squares } from '@sudoku/common/utilities/constants';
+import { hintcells, hintcandidates, findTargets, findInternalTargets, includesAll, includesAny } from './hints';
 
 
 //*****************************************************************************
 
-// compare two arrays to see if they contain exactly the same values
-function compareArrays(a,b) {
-	return(a.length === b.length && a.every((element, index) => element === b[index]));
-}
-
-// starting with the given pair, see if there are any hidden triples using the supplied cells
-function findTriplesFromPair(pair, cls) {
-
-
-}
-
-function makePairsTriples(ac) {
-	var pt = [];
-
-	var aclen = ac.length;
-	if (aclen === 0) [];
-
-	for (var i=0; i<aclen; i++) {
-		var a1 = ac[i];
-		for (var j=i+1; j<aclen; j++) {
-			var a2 = ac[j];
-			pt.push([a1,a2]);
-			for (var k=j+1; k<aclen; k++) {
-				var a3 = ac[k];
-				pt.push([a1,a3]);
-				pt.push([a2,a3]);
-				pt.push([a1,a2,a3]);
-			}
-		}
-	}
-	console.log(ac, pt);
-	return pt;
-}
-
-// given an array of bivalue pairs, find all possible triple sets
-function findPairTriples(pairs) {
-	const triples = [];
-
-	const oneInCommon = (p1, p2) =>
-	p1.filter(v => p2.includes(v)).length === 1;
-
-	const validDigitCounts = (triple) => {
-		const counts = {};
-
-		for (const pair of triple) {
-			for (const value of pair) {
-				counts[value] = (counts[value] || 0) + 1;
-
-				if (counts[value] > 2) {
-					return false;
-				}
-			}
-		}
-
-		return true;
-	};
-
-	for (let i = 0; i < pairs.length - 2; i++) {
-		for (let j = i + 1; j < pairs.length - 1; j++) {
-			if (!oneInCommon(pairs[i], pairs[j])) continue;
-
-			for (let k = j + 1; k < pairs.length; k++) {
-				const triple = [
-					pairs[i],
-					pairs[j],
-					pairs[k]
-				];
-
-				if (
-					oneInCommon(pairs[i], pairs[k]) &&
-					oneInCommon(pairs[j], pairs[k]) &&
-					validDigitCounts(triple)
-				) {
-					triples.push(triple);
-				}
-			}
-		}
-	}
-
-	return triples;
-}
 
 // for each house find the cells with 2 or 3 candidates
 // return array of cell offsets and candidates
@@ -93,10 +12,9 @@ function rcsPairsTriples(arr) {
 	var pt = [];
 	for (var j=0; j<9; j++) {
 		var cix = arr[j];
-		var cell = cells[cix];
-		if (cell.value > 0) continue;
-		var ac = cell.activecandidates;
-		if (ac.length >= 2) pt.push([j,ac]);
+		if (hintcells[cix] > 0) continue;
+		var ac = hintcandidates[cix];
+		if (ac.length > 1 && ac.length < 4) pt.push([j,ac]);
 	}
 	return Array.from(pt).sort((a,b) => a-b);
 }
@@ -190,21 +108,18 @@ export function checkForTripleCounts(cnts) {
 function findNakedTriples(arr) {
 	const triples = [];
 
-	var ijk = [];
 	for (var i=0; i<9; i++) {
 		var cixi = arr[i];
-		var ci = cells[cixi];
-		if (ci.value > 0) continue;
+		if (hintcells[cixi] > 0) continue;
 
 		// a naked triple
-		var aci = ci.activecandidates;
+		var aci = hintcandidates[cixi];
 		if (aci.length === 2 || aci.length === 3) {
 			for (var j=i+1; j<9; j++) {
 				//if (i === j) continue;
 				var cixj = arr[j];
-				var cj = cells[cixj];
-				if (cj.value > 0) continue;
-				var acj = cj.activecandidates;
+				if (hintcells[cixj] > 0) continue;
+				var acj = hintcandidates[cixj];
 				// the triple cells must have only 2 or 3 candidates
 				if (acj.length !== 2 && acj.length !== 3) continue
 
@@ -222,9 +137,8 @@ function findNakedTriples(arr) {
 				for (var k=j+1; k<9; k++) {
 					//if (i === k || j === k) continue;
 					var cixk = arr[k];
-					var ck = cells[cixk];
-					if (ck.value > 0) continue;
-					var ack = ck.activecandidates;
+					if (hintcells[cixk] > 0) continue;
+					var ack = hintcandidates[cixk];
 					if (ack.length !== 2 && ack.length !== 3) continue;
 
 					// are any of the ack values included in aci or acj

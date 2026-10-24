@@ -1,5 +1,6 @@
 import { Rows, Cols, Squares, RCS } from '@sudoku/common/utilities/constants';
-import { cells, findTargets, findTargetsInHouses, includesAll, includesAny, sameRow2, sameCol2, sameRow3, sameCol3 } from './hints';
+import { hintcells, hintcandidates } from './hints';
+import { findTargets, findTargetsInHouses, includesAll, includesAny, sameRow2, sameCol2, sameRow3, sameCol3 } from './hints';
 import { getBivaluePairs } from "./conjugates";
 
 //*****************************************************************************
@@ -36,20 +37,20 @@ function suedecoqII() {
 		for (let i=0; i<9; ++i) {
 			let cixi = sqarr[i];
 			if (cixi === bpix) continue;	// skip the other block cell
-			if (cells[cixi].value > 0) continue;
+			if (hintcells[cixi] > 0) continue;
 			for (let j=i+1; j<9; ++j) {
 				let cixj = sqarr[j];
 				if (cixj === bpix) continue;	// skip the other block cell
-				if (cells[cixj].value > 0) continue;
+				if (hintcells[cixj] > 0) continue;
 				for (let k=j+1; k<9; ++k) {
 					let cixk = sqarr[k];
 					if (cixk === bpix) continue;	// skip the other block cell
-					if (cells[cixk].value > 0) continue;
+					if (hintcells[cixk] > 0) continue;
 
 					// get all of the candidates
-					let aci = cells[cixi].activecandidates;
-					let acj = cells[cixj].activecandidates;
-					let ack = cells[cixk].activecandidates;
+					let aci = hintcandidates[cixi];
+					let acj = hintcandidates[cixj];
+					let ack = hintcandidates[cixk];
 					let sqac = new Set();
 					aci.forEach(c => sqac.add(c))
 					acj.forEach(c => sqac.add(c))
@@ -89,8 +90,8 @@ function suedecoqII() {
 					for (const ix of arr) {
 						if (ix === cixi || ix === cixj) continue;	// skip the intersection cells
 						if (bpsq === RCS[ix][2]) continue;			// cannot be in the intersection square
-						if (cells[ix].value > 0) continue;
-						acx = cells[ix].activecandidates;
+						if (hintcells[ix] > 0) continue;
+						acx = hintcandidates[ix];
 						if (acx.length !== 2) continue;
 						if (!includesAll(bp3ac, acx)) continue;
 						cix = ix;
@@ -154,13 +155,13 @@ function suedecoqI() {
 		// for each cell in the square
 		for (let i=0; i<9; ++i) {
 			let cixi = sqarr[i];
-			if (cells[cixi].value > 0) continue;
-			let aci = cells[cixi].activecandidates;
+			if (hintcells[cixi] > 0) continue;
+			let aci = hintcandidates[cixi];
 			if (aci.length > 4) continue;
 			for (let j=i+1; j<9; ++j) {
 				let cixj = sqarr[j];
-				if (cells[cixj].value > 0) continue;
-				let acj = cells[cixj].activecandidates;
+				if (hintcells[cixj] > 0) continue;
+				let acj = hintcandidates[cixj];
 				if (acj.length > 4) continue;
 				let allcs = new Set();
 				aci.forEach(c => allcs.add(c));
@@ -176,8 +177,8 @@ function suedecoqI() {
 				// look for a bivalue cell in the square with at least one common candidate
 				for (let k=0; k<9; ++k) {
 					let cixk = sqarr[k];
-					if (cells[cixk].value > 0) continue;
-					let ack = cells[cixk].activecandidates;
+					if (hintcells[cixk] > 0) continue;
+					let ack = hintcandidates[cixk];
 					if (ack.length !== 2) continue;
 					if (cixk === cixi || cixk === cixj) continue;
 					if (row === RCS[cixk][0]) continue;
@@ -199,8 +200,8 @@ function suedecoqI() {
 						// look for a trivalue cell that contains the bivalue candidates
 						for (let l=0; l<9; ++l) {
 							let cixl = sqarr[l];
-							if (cells[cixl].value > 0) continue;
-							let acl = cells[cixl].activecandidates;
+							if (hintcells[cixl] > 0) continue;
+							let acl = hintcandidates[cixl];
 							if (acl.length !== 3) continue;
 							if (!includesAll(acl, ack)) continue;
 							if (cixl === cixi || cixl === cixj || cixl === cixk) continue;
@@ -238,8 +239,8 @@ function suedecoqI() {
 					for (const ix of rcarr) {
 						if (ix === cixi || ix === cixj) continue;	// skip the intersection cells
 						if (sqix === RCS[ix][2]) continue;			// cannot be in the intersection square
-						if (cells[ix].value > 0) continue;
-						acx = cells[ix].activecandidates;
+						if (hintcells[ix] > 0) continue;
+						acx = hintcandidates[ix];
 						if (acx.length !== 2) continue;
 						if (!includesAll(wvals, acx)) continue;
 						cix = ix;

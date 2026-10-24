@@ -1,6 +1,5 @@
-import { Rows, Cols, Squares, cellRow, cellCol, cellSquare, sqRowCells, sqColCells, sqRows012, sqCols012, RCS } from '@sudoku/common/utilities/constants';
-import { cells, findTargets, findInternalTargets, includesAll, includesAny, getActiveCandidates } from './hints';
-import { countTheHouse } from './triples';
+import { Rows, Cols, Squares } from '@sudoku/common/utilities/constants';
+import { findTargets, getActiveCandidates } from './hints';
 
 //*****************************************************************************
 
@@ -50,9 +49,6 @@ function findQuads(arr) {
 					let qcells = [hci[1],hcj[1],hck[1],hcl[1]];
 
 					if (qvals.length === 4) {
-						//console.log("**************");
-						//console.log(qvals);
-						//console.log(qcells);
 						let tgts = findTargets(arr, qvals, qcells);
 						if (tgts) {
 							//console.log(tgts);

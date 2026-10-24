@@ -48,7 +48,7 @@ export default function PlayMenu() {
 			setHintMsg(h.msg);
 			setHint(h);
 			processHint(h);
-			await delay(300);
+			await delay(200);
 			h = runHints();
 		}
 	}

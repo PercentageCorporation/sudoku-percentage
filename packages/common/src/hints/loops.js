@@ -1,148 +1,61 @@
+import { cellStore } from '@sudoku/common/store/store';
 import { RCS, Rows } from '@sudoku/common/utilities/constants';
 import { getCommonCandidates } from './hints';
 import { canSeeEachOther, findTargetsSeenByAll, cellHasCandidate } from './hints';
-import { getConjugatePairs, getBivaluePairs } from "./conjugates";
-import { cellStore } from '@sudoku/common/store/store';
+import { getConjugatePairs, getBivaluePairs, findCommonConjugatePairs, findSeenConjugatePairsWithVals, findSeenBivaluePairs } from "./conjugates";
 
 //*****************************************************************************
 // common functions
 
 let chain = [];
-let chain1 = [];
 let cpairs = [];
 let bivals = [];
 
-// find cpairs of same value with common endpoint
-// bival: [ cix, [ac]] ]
-//
-function findCommonBivalueCell(ep, eprcs, value) {
-	var bvp = [];
-	// for each conjugate pair start the chains with their endpoints
-	var bvplen = bivals.length;
-	for (var bv=0; cv<bvplen; ++bv) {
-		var bp = bivals[bv];
-		var bep = bp[0];
-		if (ep === bep) continue;	// skip ourselves
-		if (!bp[1].includes(value)) continue;
-
-		var valout = bp[1][0] === value ? bp[1][1] : bp[1][0];
-
-	}
-	return bvp;
-}
-
 // chain link: [ ep, ac, invalue, outvalue, 'sw', prev link, [next links]];
+var prevj = 0;
+function endpointsInPath(ep0, ep1, clix) {
 
-function endpointsInPath(ep0, ep1) {
-	var j = chain1.length - 1;
+	let j = clix;
 	while (j >= 0) {
-		var cp0 = chain1[j][0];
+		prevj = j;
+		let cp0 = chain[j][0];
+		if (cp0 < 0 || cp0 > 80) console.log("********************", cp0);
 		if (ep0 === cp0 || ep1 === cp0) return true;
-		j = chain1[j][5];
+		j = chain[j][5];
+		if (j > prevj)  console.log("********************j", j);
 	}
 	return false;
 }
 
-function endpointInPath(ep) {
-	var j = chain1.length - 1;
+function endpointInPath(ep, clix) {
+	let j = clix;
 	while (j >= 0) {
-		var cp0 = chain1[j][0];
+		prevj = j;
+		let cp0 = chain[j][0];
+		if (cp0 < 0 || cp0 > 80) console.log("********************", cp0);
 		if (ep === cp0) return true;
-		j = chain1[j][5];
+		j = chain[j][5];
+		if (j > prevj)  console.log("********************j", j);
 	}
 	return false;
 }
 
-function inCommonHouse(rcs0, rcs1) {
-	if (rcs0[0] > 0 && rcs1[0] > 0 && rcs0[0] === rcs1[0]) return true;
-	if (rcs0[1] > 0 && rcs1[1] > 0 && rcs0[1] === rcs1[1]) return true;
-	if (rcs0[2] > 0 && rcs1[2] > 0 && rcs0[2] === rcs1[2]) return true;
-	return false;
-}
-
-// do the cells share a house
-function getCommonHouse(c0, c1) {
-	var rcs = [-1,-1,-1];
-	var rcs0 = RCS[c0];
-	var rcs1 = RCS[c1];
-	if (rcs0[0] === rcs1[0]) rcs[0] = rcs0[0];
-	if (rcs0[1] === rcs1[1]) rcs[1] = rcs0[1];
-	if (rcs0[2] === rcs1[2]) rcs[2] = rcs0[2];
-	if (rcs[0] === -1 && rcs[1] === -1 && rcs[2] === -1) return null;
-	return rcs;
-}
-
-// find cpairs of same value with common endpoint
-// cpairs: [ value, [cix0, [ac0]], [cix1, [ac1]] ]
-function findCommonConjugatePairs(ep, vals) {
-	var ccp = [];
-	// for each conjugate pair start the chains with their endpoints
-	var cvplen = cpairs.length;
-	for (var cv=0; cv<cvplen; ++cv) {
-		var cp = cpairs[cv];
-		var value = cp[0];
-		if (!vals.includes(value)) continue;
-		var cep0 = cp[1][0];
-		var cep1 = cp[2][0];
-		if (ep === cep0) {
-			ccp.push([value, cep1, cp[1], cp[2]]);
-		} else if (ep === cep1) {
-			ccp.push([value, cep0, cp[2], cp[1]]);
-		}
-	}
-	return ccp;
-}
-
-// find cpairs of a vaue contained in vals, with an endpoint that can be seen
-// cpairs: [ value, [cix0, [ac0]], [cix1, [ac1]] ]
-function findSeenConjugatePairs(ep, vals) {
-	var ccp = [];
-	// for each conjugate pair start the chains with their endpoints
-	var cvplen = cpairs.length;
-	for (var cv=0; cv<cvplen; ++cv) {
-		var cp = cpairs[cv];
-		var value = cp[0];
-		if (!vals.includes(value)) continue;
-		//var numvals = vals.length;
-		var cep0 = cp[1][0];
-		var cep1 = cp[2][0];
-		// no endpoints in common
-		if (ep === cep0  || ep === cep1) continue;	// skip ourselves
-		// try for a weak link to a strong link
-		if (canSeeEachOther(ep, cep0)) {
-			ccp.push([value, cep0, cp[1], cp[2]]);
-		} else if (canSeeEachOther(ep, cep1)) {
-			ccp.push([value, cep1, cp[2], cp[1]]);
-		}
-	}
-	return ccp;
-}
-
-// find bv pairs of a vaule, that can be seen
-// bivals: [ [cix0, [ac0]], ... ]
-function findSeenBivaluePairs(ep, value) {
-	var bvp = [];
-	// for each bivalue pair
-	var blen = bivals.length;
-	for (var b=0; b<blen; ++b) {
-		var bv = bivals[b];
-		var bep = bv[0];
-		var bac = bv[1];
-		if (ep === bep) continue;	// skip ourselves
-		if (!bac.includes(value)) continue;
-
-		// try for a weak link to a strong link
-		if (canSeeEachOther(ep, bep)) {
-			bvp.push([value, bep, bac]);
-		}
-	}
-	return bvp;
-}
 
 // link: [ ep, ac, incoming candidate, outgoing candidate, weak/strong, previous link,  [next links]]
 function nextLink(clix) {
+	console.log("nextlink", clix)
+	if (chain.length > 2) {
+		let paths = getAICPaths(chain);
+		let loops = processPaths(paths);
+		if (loops.length > 0) {
+			console.log("********************");
+			console.log(loops);
+			return loops;
+		}
+	}
+
 	//if (clix > 20) return;
-	let curlink = chain1[clix];	// current link in the chain
+	let curlink = chain[clix];	// current link in the chain
 	let ep = curlink[0];	// incoming link endpoint
 	let epac = curlink[1];	// candiates
 	let epval = curlink[2];
@@ -157,22 +70,23 @@ function nextLink(clix) {
 	if (nextstrong) {
 		// if the next link must be strong it must be to a cp with a common endpoint and value (or to the other candidate of a bv)
 		let ccp = findCommonConjugatePairs(ep, [epval]);
-		ccp.forEach((cp) => {
+		for (const cp of ccp) {
 			//console.log("strong ccp", ccp);
 			// cp: value, cep1, cpa, cpb]
 			let cep0 = cp[2][0];
 			let cac0 = cp[2][1];
 			let lnkval = cp[0];
-			if (!endpointInPath(cep0)) {
+			if (!endpointInPath(cep0, clix)) {
 				// only one link since the previous link has an endpoint in common
-				let nl = chain1.length;
+				let nl = chain.length;
 				let link = [cep0, cac0, lnkval, 0, 's', clix, []];
-				chain1[clix][6].push(nl);
-				chain1.push(link);
+				chain[clix][6].push(nl);
+				chain.push(link);
 				//console.log("pl1", link);
-				nextLink(nl);
+				let result = nextLink(nl);
+				if (result.length > 0) return result;;
 			}
-		})
+		}
 	} else {
 		// if the incoming link is strong, the next link can be either weak or strong
 		// conjugate pairs or bivalue cells are valid next links for weak or strong
@@ -184,132 +98,112 @@ function nextLink(clix) {
 		let ccp = findCommonConjugatePairs(ep, lac);
 		//console.log("weak ccp", ep, lac, ccp);
 		// strong link to next endpoint
-		ccp.forEach((cp) => {
+		for (const cp of ccp) {
 			// cp: value, cep1, cpa, cpb]
 			let cep = cp[1];	// next endpoint
 			let cac = cp[2][1];
 			let lnkval = cp[0];
 			//console.log("ccp", ep, cep, lac, cp);
-			if (!endpointInPath(cep)) {
+			if (!endpointInPath(cep, clix)) {
 				//console.log("ccp", ep, cep, lac, cp);
 				// the first link is to the alternate candidate in the same cell
-				let nl = chain1.length;
-				chain1[clix][6].push(nl);
+				let nl = chain.length;
+				chain[clix][6].push(nl);
 				let link = [ep, epac, lnkval, 0, 'w', clix, [nl+1]];
-				chain1.push(link);
+				chain.push(link);
 
 				// the next link is the other endpoint of the cp
 				link = [cep, cac, lnkval, 0, 's', nl, []];
-				chain1.push(link);
+				chain.push(link);
 
 				//console.log("pl2", clix, nl, link);
-				//console.log("pl2", chain1[clix]);
-				nextLink(nl+1);
+				//console.log("pl2", chain[clix]);
+				let result = nextLink(nl);
+				if (result.length > 0) return result;;
 			}
-		})
+		}
 
 		// or we can look for a weak link to a strong link such as a cp or bv
-		let scp = findSeenConjugatePairs(ep, [epval] );
+		let scp = findSeenConjugatePairsWithVals(ep, [epval] );
 		//console.log("weak scp", ep, epval, scp);
 		//console.log("ccp", ccp);
 		// weak link to strong link
-		scp.forEach((cp) => {
+		for (const cp of scp) {
 			// cp: value, cep1, cpa, cpb]
 			let cep0 = cp[2][0];
 			let cac0 = cp[2][1];
 			let cep1 = cp[3][0];
 			let cac1 = cp[3][1];
 			let lnkval = cp[0];
-			if (!endpointsInPath(cep0, cep1)) {
+			if (!endpointsInPath(cep0, cep1, clix)) {
 				//console.log("scp", ep, cep0, cep1, lac, cp);
 				// adding two links for the pair
-				let nl = chain1.length;
-				let link = [cep0, cac0, epval, 0, 'w', clix, [nl]];
-				chain1[clix][6].push(nl);
-				chain1.push(link);
+				let nl = chain.length;
+				let link = [cep0, cac0, epval, 0, 'w', clix, [nl+1]];
+				chain[clix][6].push(nl);
+				chain.push(link);
 				//console.log("pl3a", link);
 
 				link = [cep1, cac1, lnkval, 0, 's', nl, []];
-				chain1.push(link);
+				chain.push(link);
 				//console.log("pl3b", link);
-				nextLink(nl+1);
+				let result = nextLink(nl);
+				if (result.length > 0) return result;;
 			}
-		})
+		}
 
 		// or we can look for a weak link to a bivalue pair
 		let sbv = findSeenBivaluePairs(ep, epval);
 		//console.log("sbv", ep, epval, sbv);
-		sbv.forEach((bv) => {
+		for (const bv of sbv) {
 			let bep = bv[1];
 			//console.log("sbv1", ep, bep, epval, sbv);
-			if (!endpointInPath(bep)) {
+			if (!endpointInPath(bep, clix)) {
 				let val = bv[0];
 				let bac = bv[2];
 				let lnkval = (bac[0] === val) ? bac[1] : bac[0];	// get other candidate
 				// create an incoming weak link to a strong link
-				let nl = chain1.length;
-				let link = [bep, bac, val, epval, 'w', clix, [nl]];
-				chain1[clix][6].push(nl);
-				chain1.push(link);
+				let nl = chain.length;
+				let link = [bep, bac, val, epval, 'w', clix, [nl+1]];
+				chain[clix][6].push(nl);
+				chain.push(link);
 				//console.log("pl3a", link);
 
 				link = [bep, bac, lnkval, val, 's', nl, []];
-				chain1.push(link);
+				chain.push(link);
 				//console.log("pl3b", link);
 
-				let c1 = structuredClone(chain1);
-				//console.log("sbv", bep, bac, sbv, c1);
-
-				nextLink(nl+1);
-
+				let result = nextLink(nl);
+				if (result.length > 0) return result;;
 			}
-		})
-	}
-
-	//console.log("NL RETURN");
-
-}
-
-function filterShortest(arrays) {
-	const map = new Map();
-
-	for (const arr of arrays) {
-		const start = arr[0][0];
-		const end = arr[arr.length - 1][0];
-
-		const key = start < end
-		? `${start},${end}`
-		: `${end},${start}`;
-
-		if (!map.has(key) || arr.length < map.get(key).length) {
-			map.set(key, arr);
 		}
 	}
 
-	return [...map.values()];
+	return [];
+
 }
 
 // construct the list of path cells from the links
 // going from bottom up
 // chain: [ [ ep, ac, inval, outval, linktype, prev link, [next links] ] ]
-function getAICPaths(chain1) {
+function getAICPaths(chain) {
 	// link: [ val, cix, prevlink, [nextlinks] ]
 	let paths = [];
-	let end = chain1.length - 1;
+	let end = chain.length - 1;
 	if (end === 0) return paths;
 
-	let startval = chain1[0][2]
+	let startval = chain[0][2]
 
 	for (let i=end; i >= 0; --i) {
 		// find the first link with the start value
-		if (chain1[i][6].length > 0) continue;
-		//if (chain1[i][2] !== startval) continue;	// the end must match the start
+		if (chain[i][6].length > 0) continue;
+		//if (chain[i][2] !== startval) continue;	// the end must match the start
 		//console.log("endchain", i, startval);
 		let path = [];
 		// follow the path up
 		let j = i;
 		while (j >= 0) {
-			let linkj = chain1[j];
+			let linkj = chain[j];
 			path.push(j);
 			j = linkj[5];	// back up the chain
 			//console.log("prev link", j);
@@ -321,7 +215,7 @@ function getAICPaths(chain1) {
 			path.reverse();
 			let cpath = [];
 			path.forEach((p) => {
-				cpath.push([chain1[p][0],chain1[p][2],chain1[p][3]]);
+				cpath.push([chain[p][0],chain[p][2],chain[p][3]]);
 			})
 			paths.push(cpath);
 		}
@@ -340,12 +234,12 @@ export function loops() {
 	let  loops = [];
 	cpairs = getConjugatePairs();
 	//cpairs: [ value, [cix0, [ac0]], [cix1, [ac1]] ]
-	//console.log("cpairs", cpairs);
+	console.log("cpairs", cpairs);
 
 	bivals = getBivaluePairs();
 	//console.log("bivals", bivals);
-	// we need to start with a strong link so we might as well use a cp
-	// for each conjugate pair start the chains with their endpoints
+	// we need to start with a strong link so we might as well use a bivalue cell
+	// for each bivalue cell start the chains with their candidates
 	// bv: [ cix, [ac]]
 	let  bvlen = bivals.length;
 	for (let  bv=0; bv<bvlen; ++bv) {
@@ -354,36 +248,37 @@ export function loops() {
 		let  bvac = bp[1];
 		// make the first link
 		//console.log("bv0start", bp);
-		chain1 = [];	// reset the chain
+		chain = [];	// reset the chain
 		let link = [bvep, bvac,  bvac[0], 0, 'x', -1, [1]];
-		chain1.push(link);
+		chain.push(link);
 		link = [bvep, bvac,  bvac[1], bvac[0], 's', 0, []];
-		chain1.push(link);
-		nextLink(1);
+		chain.push(link);
+		//loops = nextLink(1);
+		console.log("bchain0", chain.length);
 
-		//console.log("chain0", chain1);
-		let pathsa = getAICPaths(chain1);
+		//let pathsa = getAICPaths(chain);
 		//allpaths.push.apply(allpaths, pathsa);
-		//console.log("pathsa", pathsa);
+		//console.log("pathsa", bvep, bvac[0], pathsa.length);
 		//console.log("bv0end", pathsa.length);
-		loops = processPaths(pathsa);
+		//loops = processPaths(pathsa);
 		if (loops.length > 0) return loops;
 
 		// make the alternate link
 		//console.log("bv1start", bp);
-		chain1 = [];	// reset the chain
+		chain = [];	// reset the chain
 		link = [bvep, bvac,  bvac[1], 0, 'x', -1, [1]];
-		chain1.push(link);
+		chain.push(link);
 		link = [bvep, bvac,  bvac[0], bvac[1], 's', 0, []];
-		chain1.push(link);
-		nextLink(1);
+		chain.push(link);
+		//loops = nextLink(1);
+		console.log("bchain1", chain.length);
 
-		//console.log("chain1", chain1);
-		let pathsb = getAICPaths(chain1);
+		//let pathsb = getAICPaths(chain);
 		//allpaths.push.apply(allpaths, pathsb);
-		//console.log("pathsb", pathsb);
+		//console.log("pathsb", bvep, bvac[1], pathsb.length);
 		//console.log("bv1end", pathsb.length);
-		loops = processPaths(pathsb);
+
+		//loops = processPaths(pathsb);
 		if (loops.length > 0) return loops;
 	}
 
@@ -391,7 +286,7 @@ export function loops() {
 	// for each conjugate pair start the chains with their endpoints
 	let cvplen = cpairs.length;
 	for (let cv=0; cv<cvplen; ++cv) {
-		//if (cv !== 24) continue;	// TEST
+		if (cv !== 29) continue;	// TEST
 		let cp = cpairs[cv];
 		//console.log("cp", cp);
 		// pick a starting endpoint
@@ -407,35 +302,36 @@ export function loops() {
 		//if (sep1 !== 75) continue;	// TEST
 		// make the first link
 		//console.log("cp0start", cp);
-		chain1 = [];	// reset the chain
+		chain = [];	// reset the chain
 		let link = [sep0, sac0,  valstart, 0, 'x', -1, [1]];
-		chain1.push(link);
+		chain.push(link);
 		link = [sep1, sac1,  valstart, 0, 's', 0, []];
-		chain1.push(link);
-		nextLink(1);
+		chain.push(link);
+		loops = nextLink(1);
+		console.log("chain0", cv, chain.length);
 
-		//console.log("chain1", cv, chain1);
-		let pathsa = getAICPaths(chain1);
+		//let pathsa = getAICPaths(chain);
 		//allpaths.push.apply(allpaths, pathsa);
-		//console.log("pathsa", cv, pathsa);
+		//console.log("pathsa", sep0, pathsa.length);
 		//console.log("cp0end", pathsa.length);
-		loops = processPaths(pathsa);
+		//loops = processPaths(pathsa);
 		if (loops.length > 0) return loops;
 
 		// make the alternate link
 		//console.log("cp1start", cp);
-		chain1 = [];	// reset the chain
+		chain = [];	// reset the chain
 		link = [sep1, sac1,  valstart, 0, 'x', -1, [1]];
-		chain1.push(link);
+		chain.push(link);
 		link = [sep0, sac0,  valstart, 0, 's', 0, []];
-		chain1.push(link);
-		nextLink(1);
+		chain.push(link);
+		loops = nextLink(1);
+		console.log("chain1", cv, chain.length);
 
-		let pathsb = getAICPaths(chain1);
+		//let pathsb = getAICPaths(chain);
 		//allpaths.push.apply(allpaths, pathsb);
-		//console.log("pathsb", sep1, pathsb, chain1);
+		//console.log("pathsb", sep1, pathsb.length);
 		//console.log("cp1end", pathsb.length);
-		loops = processPaths(pathsb);
+		//loops = processPaths(pathsb);
 		if (loops.length > 0) return loops;
 	}
 
@@ -475,39 +371,6 @@ function findLoopTargets(path) {
 	if (tgts) targets.push([tgts,[val]]);
 
 	return targets;
-}
-
-function pathsMatch(p1, p2) {
-	if (p1.length !== p2.length) return false;
-	var plen = p1.length;
-	var pend = plen - 1;
-	var pr = p2;
-	if (!(p1[0][0] === p2[0][0] && p1[pend][0] === p2[pend][0] )) {
-		// not same start/end
-		if (!(p1[0][0] === p2[pend][0] && p1[pend][0] === p2[0][0] )) {
-			// not reversed either
-			return false;
-		}
-		pr = Array.from(p2).reverse;
-	}
-
-	return p1.every(item => p2.includes(item));
-}
-
-function removeDuplicatePaths(paths) {
-	const seen = new Set();
-
-	return paths.filter(path => {
-		const forward = path.join(',');
-		const reverse = [...path].reverse().join(',');
-
-		const key = forward < reverse ? forward : reverse;
-
-		if (seen.has(key)) return false;
-
-		seen.add(key);
-		return true;
-	});
 }
 
 function findTargetsCorners(val, c0, c1) {
@@ -700,6 +563,7 @@ function makeHint(aic) {
 
 function makeHint2(aic) {
 	// aic: sval, sep, epi, tgts, apath
+	console.log("aic2", aic);
 	let ep0 = aic[1];
 	let ep1 = aic[2];
 	let tgtslist = aic[3];

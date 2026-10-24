@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include "sudoku/constants.hpp"
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -9,37 +10,6 @@ namespace sudoku {
 using Mask = std::uint16_t;
 constexpr Mask digitBit(int digit) { return static_cast<Mask>(1u << (digit - 1)); }
 constexpr Mask allDigits = 0x1ff;
-
-// Cell indices are square-major, matching constants.js: 0..8 are square 0.
-constexpr int cellIndex(int row, int col) {
-    return ((row / 3) * 3 + col / 3) * 9 + (row % 3) * 3 + col % 3;
-}
-constexpr int cellRow(int index) { return (index / 27) * 3 + (index % 9) / 3; }
-constexpr int cellCol(int index) { return ((index / 9) % 3) * 3 + index % 3; }
-constexpr int cellSquare(int index) { return index / 9; }
-
-using House = std::array<int, 9>;
-constexpr auto makeRows() {
-    std::array<House, 9> houses{};
-    for (int r = 0; r < 9; ++r)
-        for (int c = 0; c < 9; ++c) houses[r][c] = cellIndex(r,c);
-    return houses;
-}
-constexpr auto makeCols() {
-    std::array<House, 9> houses{};
-    for (int c = 0; c < 9; ++c)
-        for (int r = 0; r < 9; ++r) houses[c][r] = cellIndex(r,c);
-    return houses;
-}
-constexpr auto makeSquares() {
-    std::array<House, 9> houses{};
-    for (int s = 0; s < 9; ++s)
-        for (int offset = 0; offset < 9; ++offset) houses[s][offset] = s * 9 + offset;
-    return houses;
-}
-inline constexpr auto Rows = makeRows();
-inline constexpr auto Cols = makeCols();
-inline constexpr auto Squares = makeSquares();
 
 struct Cell {
     std::uint8_t value = 0;

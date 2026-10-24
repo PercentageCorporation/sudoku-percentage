@@ -1,5 +1,5 @@
 import { includesAny } from './hints';
-import { cells, findSeenTargets2, findTargetsSeenByAll, findTargets } from './hints';
+import { hintcells, hintcandidates, findSeenTargets2, findTargetsSeenByAll, findTargets } from './hints';
 import { sameRow2, sameCol2, canSeeEachOther, sameHouse } from './hints';
 import { Rows, Cols, Squares } from '@sudoku/common/utilities/constants';
 import { getConjugatePairs, getConjugatePairsForValue, getBivaluePairs } from "./conjugates";
@@ -276,9 +276,8 @@ function findLink(curlinkix, nextval, endval ) {
 		var bvix = bvx[0];
 		if (curcix === bvix) continue;	// skip ourselves if same cell
 		// see if this cell has the candidate value
-		var bvcell = cells[bvix];
-		if (bvcell.value > 0) continue;
-		var bvac = bvcell.activecandidates;
+		if (hintcells[bvix] > 0) continue;
+		var bvac = hintcandidates[bvix];
 		if (!bvac.includes(nextval)) continue;	// not what we are looking for
 		if (!canSeeEachOther(curcix, bvix)) continue;	// not in the same house
 		// check to see if we already have this cell in the links

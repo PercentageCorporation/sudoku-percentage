@@ -1,5 +1,4 @@
-import { canSeeEachOther, canSeeEachOtherRC } from './hints';
-//import { cells, rCounts2, vRows, vCols, vSqs } from './hints';
+import { canSeeEachOther } from './hints';
 import { findAllCellsWithValue, includesAll, includesAny, findTargetsSeenByBoth, findTargets } from './hints';
 import { getConjugatePairs } from "./conjugates";
 

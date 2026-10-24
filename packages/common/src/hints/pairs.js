@@ -1,6 +1,6 @@
 import { Rows, Cols, Squares } from '@sudoku/common/utilities/constants';
 import { findTargets, findInternalTargets, includesAll } from './hints';
-import { cells, vRows, vCols, vSqs } from './hints';
+import { hintcells, hintcandidates, vRows, vCols, vSqs } from './hints';
 
 
 //*****************************************************************************
@@ -19,9 +19,8 @@ function hasPairs(arr, vals) {
 	var indices = [];
 	for (var i=0; i<9; i++) {
 		var cix = arr[i];
-		var c = cells[cix];
-		if (c.value > 0) continue;
-		var ac = c.activecandidates;
+		if (hintcells[cix] > 0) continue;
+		var ac = hintcandidates[cix];
 		if (includesAll(ac, vals)) indices.push([i,cix]);
 	}
 	if (indices.length === 2) return indices;
@@ -47,15 +46,15 @@ function findPairs(arr) {
 	var px = [];
 	outer: for (var i=0; i<9; ++i) {
 		var cii = arr[i];
-		var ci = cells[cii];
+		if (hintcells[cii] > 0) continue;
 		//console.log(i, cix,  arr, ci);
-		var aci = ci.activecandidates;
-		if (ci.value === 0 && aci.length === 2) {
+		var aci = hintcandidates[cii];
+		if (aci.length === 2) {
 			for (var j=i+1; j<9; ++j) {
 				var cij = arr[j];
-				var cj = cells[cij];
-				var acj = cj.activecandidates;
-				if (cj.value === 0 && acj.length === 2) {
+				if (hintcells[cij] > 0) continue;
+				var acj = hintcandidates[cij];
+				if (acj.length === 2) {
 					if ((aci[0] === acj[0] && aci[1] === acj[1]) || (aci[0] === acj[1] && aci[1] === acj[0])) {
 						px.push([[i,j],[cii,cij],aci]);
 						// by definition for a valid game there can be at most two matching pairs in a house

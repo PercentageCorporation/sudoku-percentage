@@ -1,14 +1,9 @@
-import { cellStore } from "@sudoku/common/store/store";
 import { getBivaluePairs, getConjugatePairs } from './conjugates';
 import { Rows, Cols, Squares, cellRow, cellCol, cellSquare } from "@sudoku/common/utilities/constants";
-
-const INVALID = -1;
-const UNKNOWN = 0;
-const VALID = 1;
+import { hintcells, hintcandidates } from './hints';
 
 let fccells = null;
 let fccandidates = null;
-let cells = null;
 
 export function forcingChains() {
 	let forced = [];
@@ -20,13 +15,10 @@ export function forcingChains() {
 	//cpairs: [ value, [cix0, [ac0]], [cix1, [ac1]] ]
 	//console.log("cpairs", cpairs);
 
-	cells = cellStore.getState().cells;
-
 	// calculate the number of strong links attached to each cell
 	//let stronglinks = Array.from({ length: 81 }, () => []),
 	let stronglinks = Array(81).fill(0);
 	let values = [0,0,0,0,0,0,0,0,0,0];
-	let tgts = null;
 
 	let cplen = cpairs.length;
 	for( let cx=0; cx<cplen; ++cx) {
@@ -45,7 +37,7 @@ export function forcingChains() {
 	let strongs = [];
 	for( let i=0; i<81; ++i) {
 		if (stronglinks[i] > 0) strongs.push([i, stronglinks[i]]);
-		cells[i].activecandidates.map(v => values[v]++);
+		hintcandidates[i].map(v => values[v]++);
 	}
 	strongs.sort((a, b) => b[1] - a[1])
 	//console.log("values",values);
@@ -68,8 +60,7 @@ export function forcingChains() {
 
 function analyzeTarget(tix) {
 	let forced = [];
-	let tc = cells[ tix ];
-	let tac = tc.activecandidates;
+	let tac = hintcandidates[tix];
 
 	for (let acx=0; acx<tac.length; ++acx ) {
 		let targetvalue = tac[acx];
@@ -77,8 +68,8 @@ function analyzeTarget(tix) {
 		//console.log("targetvalue1", tix, targetvalue);
 
 		let tgts = [[tix,targetvalue]];
-		fccells  = Array.from(cells, c => c.value);
-		fccandidates  = Array.from(cells, c => c.activecandidates);
+		fccells  = [...hintcells];
+		fccandidates  = [...hintcandidates];
 
 		let conclusion = reachConclusion(tgts);
 		let result = conclusion[0];

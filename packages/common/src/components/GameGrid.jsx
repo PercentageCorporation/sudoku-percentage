@@ -19,7 +19,7 @@ function Candidates({ix}) {
 	}
 	if (showBivalue)  {
 		let cibp = cellInBivaluePair(ix,selectedValue);
-		bg = cibp > 0 ? " bg-yellow-200" : "";
+		if (cibp > 0) bg = cibp > 0 ? " bg-yellow-200" : "";
 	}
 
 	//console.log(ix, can, noncan);
@@ -147,13 +147,16 @@ function Cell({ix}) {
 				if (hint.targets.includes(ix))
 					selMode = 3;
 				else if (hint.parity1.includes(ix))
-					(hint.cells.includes(ix)) ? selMode = 14 : selMode = 10;
+					selMode = 10;
 				else if (hint.parity2.includes(ix))
-					(hint.cells.includes(ix)) ? selMode = 15 : selMode = 11;
+					selMode = 11;
 				else if (hint.parity3 && hint.parity3.includes(ix))
 					selMode = 12;
 				else if (hint.parity4 && hint.parity4.includes(ix))
 					selMode = 13;
+
+				if (hint.cells[0] === ix) selMode = 14;
+				if (hint.cells[1] === ix) selMode = 15;
 
 				break;
 			case "colorsI":

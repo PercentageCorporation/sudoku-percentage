@@ -1,24 +1,24 @@
-import {Rows, Cols, Squares, cellRow, cellCol, cellSquare, sqRowCells, sqColCells, sqRows012, sqCols012, RCS} from '@sudoku/common/utilities/constants';
-import { cellStore, useCellActions } from "@sudoku/common/store/store";
-import { initCounts, rCounts2, cCounts2, sCounts2, includesAll } from './hints';
+import { Rows, Cols, Squares } from '@sudoku/common/utilities/constants';
+import { includesAll, canSeeEachOther, includesAny } from './hints';
+import { hintcells, hintcandidates } from './hints';
 
-let cells = [];
+let localcells = [];
 let conjugateCells = null;
 let conjugatePairs = [];
+let conjugatesByCell = null;
+let conjugatesByValue = null;
 let bivalueCells = null;
 let bivaluePairs = [];
-let strongLinks = [];	// includes conjugate pairs and bivalue cells
+let bivaluesByValue = null;
 
 // *****************************************************************************
 // functions called from anywhere
 
 export function getConjugatePairs() {
-	cells = cellStore.getState().cells;
-	if (cells !== conjugateCells || conjugatePairs.length === 0) {
-		var cp = calculateConjugatePairs();
-		conjugatePairs = cp[0];
-
-		conjugateCells = cells;
+	localcells = hintcells;
+	if (localcells !== conjugateCells) {
+		conjugatePairs = calculateConjugatePairs();
+		conjugateCells = localcells;
 		//console.log("conjugate pairs updated", conjugatePairs.length);
 	}
 
@@ -26,16 +26,83 @@ export function getConjugatePairs() {
 }
 
 export function getBivaluePairs() {
-	cells = cellStore.getState().cells;
-	if (cells !== bivalueCells || bivaluePairs.length === 0) {
-		var bp = findAllBivalueCells();
-		bivaluePairs = bp;
-
-		bivalueCells = cells;
-		//console.log("bivalue pairs updated", bivaluePairs.length);
+	localcells = hintcells;
+	if (localcells !== bivalueCells) {
+		bivaluePairs = findAllBivalueCells();;
+		bivalueCells = localcells;
 	}
-
 	return bivaluePairs;
+}
+
+// find cpairs of same value with common endpoint
+// cpairs: [ value, [cix0, [ac0]], [cix1, [ac1]] ]
+export function findCommonConjugatePairs(ep, vals) {
+	getConjugatePairs();
+	var ccp = [];
+	// for each conjugate pair start the chains with their endpoints
+	for (const cpix of conjugatesByCell[ep]) {
+		var cp = conjugatePairs[cpix];
+		var value = cp[0];
+		if (!vals.includes(value)) continue;
+		var cep0 = cp[1][0];
+		var cep1 = cp[2][0];
+		if (ep === cep0) {
+			ccp.push([value, cep1, cp[1], cp[2]]);
+		} else if (ep === cep1) {
+			ccp.push([value, cep0, cp[2], cp[1]]);
+		}
+	}
+	return ccp;
+}
+
+// find cpairs of a vaue contained in vals, with an endpoint that can be seen
+// cpairs: [ value, [cix0, [ac0]], [cix1, [ac1]] ]
+export function findSeenConjugatePairs(ep, vals) {
+	getConjugatePairs();
+	var ccp = [];
+	for (const value of vals) {
+		// for each cp of value
+		for (const vix of conjugatesByValue[value]) {
+			var cp = conjugatePairs[vix];
+
+			var cep0 = cp[1][0];
+			var cep1 = cp[2][0];
+			// no endpoints in common
+			if (ep === cep0  || ep === cep1) continue;	// skip ourselves
+			// try for a weak link to a strong link
+			if (canSeeEachOther(ep, cep0)) {
+				ccp.push([value, cep0, cp[1], cp[2]]);
+			} else if (canSeeEachOther(ep, cep1)) {
+				ccp.push([value, cep1, cp[2], cp[1]]);
+			}
+		}
+	}
+	return ccp;
+}
+
+// find cpairs with value in the enpoint contained in vals, with an endpoint that can be seen
+// cpairs: [ value, [cix0, [ac0]], [cix1, [ac1]] ]
+export function findSeenConjugatePairsWithVals(ep, vals) {
+	getConjugatePairs();
+	var ccp = [];
+	for (const value of vals) {
+		// for each cp of value
+		for (const cp of conjugatePairs) {
+			var cep0 = cp[1][0];
+			var cac0 = cp[1][1];
+			var cep1 = cp[2][0];
+			var cac1 = cp[2][1];
+			// no endpoints in common
+			if (ep === cep0  || ep === cep1) continue;	// skip ourselves
+			// try for a weak link to a strong link
+			if (canSeeEachOther(ep, cep0)) {
+				if (includesAny(cac0, vals)) ccp.push([value, cep0, cp[1], cp[2]]);
+			} else if (canSeeEachOther(ep, cep1)) {
+				if (includesAny(cac1, vals)) ccp.push([value, cep1, cp[2], cp[1]]);
+			}
+		}
+	}
+	return ccp;
 }
 
 // get the conjugate pairs for the given value
@@ -48,168 +115,152 @@ export function getConjugatePairsForValue(cpairs, v) {
 	return vp;
 }
 
-// get the conjugate pairs that contain the cell [cix]
-export function getConjugatePairsWithCell(cix) {
-	getConjugatePairs();
-	var cp = [];
-	conjugatePairs.forEach((cp) => {
-		if (cp[1][0] === cix || cp[2][0] === cix) vp.push(cp);
-	})
-	return cp;
-}
-
 // is the cell in a conjugate pair
-export function cellInConjugatePair(cix, selectedValue) {
+// return 1 for endpoint1 and 2 for endpoint2
+export function cellInConjugatePair(cix, value) {
+	if (value < 1 || value > 9) return 0;
 	getConjugatePairs();
-	for (const cp of conjugatePairs) {
-		if (selectedValue > 0 && selectedValue !== cp[0]) continue;
+	for (const cpix of conjugatesByValue[value]) {
+		let cp = conjugatePairs[cpix];
 		if (cix === cp[1][0]) return 1;
 		if (cix === cp[2][0]) return 2;
 	}
 	return 0;
 }
 
+// Find exactly two cells containing a candidate in a house.
+// Return null if there are fewer or more than two.
+function findConjugateInHouse(house, value) {
+	let first = -1;
+	let second = -1;
+
+	for (const cix of house) {
+		if (hintcells[cix] > 0) continue;
+		if (!hintcandidates[cix].includes(value)) continue;
+		if (first === -1) {
+			first = cix;
+		} else if (second === -1) {
+			second = cix;
+		} else {
+			return null; // Third occurrence: not conjugate
+		}
+	}
+	if (second === -1) return null;
+
+	return [
+		[first, hintcandidates[first]],
+		[second, hintcandidates[second]]
+	];
+}
+
+// Calculate all conjugate pairs and build lookup indexes.
+function calculateConjugatePairs() {
+	const cpairs = [];
+
+	conjugatesByCell = Array.from({ length: 81 }, () => []);
+	conjugatesByValue = Array.from({ length: 10 }, () => []);
+
+	function addPair(value, pair, deduplicate = false) {
+		const [a, b] = pair;
+		const c0 = a[0];
+		const c1 = b[0];
+
+		if (deduplicate) {
+			for (const ix of conjugatesByValue[value]) {
+				const existing = cpairs[ix];
+				const e0 = existing[1][0];
+				const e1 = existing[2][0];
+
+				if ((e0 === c0 && e1 === c1) ||
+					(e0 === c1 && e1 === c0)) {
+					return;
+					}
+			}
+		}
+
+		const ix = cpairs.length;
+		cpairs.push([value, a, b]);
+
+		conjugatesByCell[c0].push(ix);
+		conjugatesByCell[c1].push(ix);
+		conjugatesByValue[value].push(ix);
+	}
+
+	// Preserve the original order: digit, rows, columns, squares.
+	for (let value = 1; value <= 9; ++value) {
+		for (const house of Rows) {
+			const pair = findConjugateInHouse(house, value);
+			if (pair) addPair(value, pair);
+		}
+
+		for (const house of Cols) {
+			const pair = findConjugateInHouse(house, value);
+			if (pair) addPair(value, pair);
+		}
+
+		for (const house of Squares) {
+			const pair = findConjugateInHouse(house, value);
+			if (pair) addPair(value, pair, true);
+		}
+	}
+
+	return cpairs;
+}
+
 // is the cell in a bivalue pair
 export function cellInBivaluePair(cix, value) {
 	getBivaluePairs();
-	//console.log(cix, value, bivaluePairs)
-	var bvlen = bivaluePairs.length;
-	for (var i=0; i<bvlen; ++i) {
-		var bv = bivaluePairs[i];
-		if (value > 0 && !bv[1].includes(value)) continue;
-		if (cix === bv[0]) return 1;
+
+	if (value > 0) {
+		return bivaluesByValue[value].some(ix => bivaluePairs[ix][0] === cix) ? 1 : 0;
 	}
-	return 0;
+	return bivaluePairs.some(bp => bp[0] === cix) ? 1 : 0;
 }
-// find all occurances of the value in the row/col/sq
-function findValuePairsInRCS(arr, val) {
-	var cls = [];
-	for (var i=0; i<9; ++i) {
-		const cixi = arr[i];
-		const celli = cells[cixi];
-		if (celli.value > 0) continue;
-		var aci = celli.activecandidates;
-		if (!aci.includes(val)) continue;
-		// found one, look for the other
-		for (var j=i+1; j<9; ++j) {
-			const cixj = arr[j];
-			const cellj = cells[cixj];
-			if (cellj.value > 0) continue;
-			var acj = cellj.activecandidates;
-			if (!acj.includes(val)) continue;
-			// found two
-			// cls: [ [offset, cix, ac], [offset, cix, ac] ]
-			cls.push([i, cixi, aci],[j, cixj, acj]);
+
+// find bv pairs of a vaule, that can be seen
+// bivals: [ [cix0, [ac0]], ... ]
+export function findSeenBivaluePairs(ep, value) {
+	getBivaluePairs();
+	var bvp = [];
+	// for each bivalue pair with value
+	for (const bpix of bivaluesByValue[value]) {
+		var bv = bivaluePairs[bpix];
+		var bep = bv[0];
+		var bac = bv[1];
+		if (ep === bep) continue;	// skip ourselves
+		// try for a weak link to a strong link
+		if (canSeeEachOther(ep, bep)) {
+			bvp.push([value, bep, bac]);
 		}
 	}
-	return cls;
-}
-
-// find conjugate pairs
-// cpairs: [ value, [cix0, [ac0]], [cix1, [ac1]] ]
-// if a value only appears twice in a row/col/sq it is a strong link conjugate pair
-function calculateConjugatePairs() {
-
-	// for each row for each value of count 2 get their cell info
-	var cpairs = [];
-	var cpairs2 = [];
-	initCounts();
-
-	for (var v=1; v<10; ++v) {
-		var vrows = rCounts2[v];
-		//console.log(v, vrows);
-		// vrows are the rows containing 2 of value v
-		vrows.forEach((r) => {
-			// vrows [ [offset1, cell1, ac1] [offset2, cell2, ac2] ]
-			// find the two cells containing value v in the row
-			var vals = findValuePairsInRCS(Rows[r], v);
-			if (vals.length === 2) {
-				var ac1 = vals[0][2]
-				var ac2 = vals[1][2]
-				var cel1 = vals[0][1];
-				var cel2 = vals[1][1];
-				var rcs1 = [cel1, ac1];
-				var rcs2 = [cel2, ac2];
-				cpairs.push([v, rcs1, rcs2]);
-				cpairs2.push([ [cel1,cel2], [v, v], [r,-1,-1] ]);
-			}
-		})
-		var vcols = cCounts2[v];
-		//console.log(v, vcols);
-		vcols.forEach((c) => {
-			// vals [ [offset1, cell1, ac1] [offset2, cell2, ac2] ]
-			var vals = findValuePairsInRCS(Cols[c], v);
-			if (vals.length === 2) {
-				var ac1 = vals[0][2]
-				var ac2 = vals[1][2]
-				var cel1 = vals[0][1];
-				var cel2 = vals[1][1];
-				var rcs1 = [cel1, ac1];
-				var rcs2 = [cel2, ac2];
-				cpairs.push([v, rcs1, rcs2]);
-				cpairs2.push([ [cel1,cel2], [v, v], [-1,c,-1]]);
-			}
-		})
-
-		var vsqs = sCounts2[v];
-		//console.log(v, vsqs);
-		vsqs.forEach((s) => {
-			// vals [ [off1, cell1, ac1] [off2, cell2, ac2] ]
-			var vals = findValuePairsInRCS(Squares[s], v);
-			//console.log("vals", vals);
-			if (vals.length === 2) {
-				var ac1 = vals[0][2]
-				var ac2 = vals[1][2]
-				var cel1 = vals[0][1];
-				var cel2 = vals[1][1];
-				var rcs1 = [cel1, ac1];
-				var rcs2 = [cel2, ac2];
-				// check if pair in square is also in a row or column
-				var dup = false;
-				for (var cx=0; cx<cpairs2.length; ++cx) {
-					var cp = cpairs2[cx];
-					if ((cp[0][0] === cel1 && cp[0][1] === cel2) || (cp[0][0] === cel1 && cp[0][1] === cel2)) {
-						// same pair, just add the square index
-						//console.log(v, cx, s, cp, cpairs2)
-						cpairs2[cx][2][2] = s;
-						dup = true;
-						break;
-					}
-				}
-				if (!dup) {
-					cpairs2.push([ [cel1,cel2], [v, v], [-1,-1,s] ]);
-					cpairs.push([v, rcs1, rcs2]);
-				}
-			}
-		})
-	}
-	//console.log("cpairs", cpairs);
-	//console.log("cpairs", cpairs.length, rowp, colp, sqp);
-
-	return [cpairs, cpairs2];
+	return bvp;
 }
 
 // find all cells with just 2 candidates
 // return array sorted by candidate pairs
 // bv: [ cix, [ac] ]
 export function findAllBivalueCells() {
-	cells = cellStore.getState().cells;
+	bivaluesByValue = Array.from({ length: 10 }, () => []);
 
 	var bv = [];
 	for (var cix=0; cix<81; ++cix) {
-		var c = cells[cix];
-		var ac = c.activecandidates;
-		if ( c.value === 0 && ac.length === 2) {
-			bv.push([cix,  ac]);
-		}
+		if (hintcells[cix] > 0) continue;
+		var ac = hintcandidates[cix];
+		if (ac.length === 2) bv.push([cix,  ac]);
 	}
-	bv = bv.sort((a,b) => a[1][0] - b[1][0]);	// sort by first candidate
-	bv = bv.sort((a,b) => a[1][1] - b[1][1]);	// then by second candidate
+
+	bv.sort((a, b) => a[1][1] - b[1][1] || a[1][0] - b[1][0]);
+	bivaluesByValue = Array.from({ length: 10 }, () => []);
+
+	bv.forEach((bp, ix) => {
+		bivaluesByValue[bp[1][0]].push(ix);
+		bivaluesByValue[bp[1][1]].push(ix);
+	});
 
 	return bv;
 }
 
-// list all bivalue cells where there are two or more cells
+// list all bivalue cells by pair where there are two or more cells
 // bvp: [ [ac], [[cix0, rcs0], [cix1, rcs1], ... ] ]
 
 export function getBivalueList() {
@@ -249,134 +300,3 @@ export function getBivalueList() {
 	return bvpl;
 }
 
-export function getConjugatePairsRowMajor(values, candidates) {
-	const pairs = [];
-
-	// Examine each digit in each house
-	function checkHouse(indices, type, house) {
-		for (let value = 1; value <= 9; value++) {
-			const cells = indices.filter(ix =>
-			values[ix] === 0 &&
-			candidates[ix].includes(value)
-			);
-
-			if (cells.length === 2) {
-				pairs.push({
-					value,
-					cells,
-					type,
-					house
-				});
-			}
-		}
-	}
-
-	// Rows
-	for (let row = 0; row < 9; row++) {
-		const indices = Array.from(
-			{ length: 9 },
-			(_, col) => row * 9 + col
-		);
-
-		checkHouse(indices, "row", row);
-	}
-
-	// Columns
-	for (let col = 0; col < 9; col++) {
-		const indices = Array.from(
-			{ length: 9 },
-			(_, row) => row * 9 + col
-		);
-
-		checkHouse(indices, "col", col);
-	}
-
-	// Boxes
-	for (let box = 0; box < 9; box++) {
-		const br = Math.floor(box / 3) * 3;
-		const bc = (box % 3) * 3;
-		const indices = [];
-
-		for (let r = 0; r < 3; r++) {
-			for (let c = 0; c < 3; c++) {
-				indices.push((br + r) * 9 + bc + c);
-			}
-		}
-
-		checkHouse(indices, "box", box);
-	}
-
-	return pairs;
-}
-
-export function getConjugatePairsBlockMajor(candidates) {
-	const pairs = [];
-
-	function checkHouse(indices, type, house) {
-		for (let value = 1; value <= 9; value++) {
-			const cells = indices.filter(ix => candidates[ix] !== null && candidates[ix].includes(value));
-			if (cells.length === 2) {
-				// Avoid duplicate conjugate pairs
-				if (!pairs.some(p =>
-					p.value === value &&
-					p.cells[0] === cells[0] &&
-					p.cells[1] === cells[1]
-				)) {
-					pairs.push([
-						value,
-						cells,
-						type,
-						house
-					]);
-				} else {
-
-				}
-			}
-		}
-	}
-
-	// Convert row/column to block-major index
-	function index(row, col) {
-		const box = Math.floor(row / 3) * 3 +
-		Math.floor(col / 3);
-
-		const pos = (row % 3) * 3 + (col % 3);
-
-		return box * 9 + pos;
-	}
-
-	// Rows
-	for (let row = 0; row < 9; row++) {
-		const indices = [];
-
-		for (let col = 0; col < 9; col++) {
-			indices.push(index(row, col));
-		}
-
-		checkHouse(indices, "row", row);
-	}
-
-	// Columns
-	for (let col = 0; col < 9; col++) {
-		const indices = [];
-
-		for (let row = 0; row < 9; row++) {
-			indices.push(index(row, col));
-		}
-
-		checkHouse(indices, "col", col);
-	}
-
-	// Boxes
-	for (let box = 0; box < 9; box++) {
-		const indices = [];
-
-		for (let pos = 0; pos < 9; pos++) {
-			indices.push(box * 9 + pos);
-		}
-
-		checkHouse(indices, "box", box);
-	}
-
-	return pairs;
-}

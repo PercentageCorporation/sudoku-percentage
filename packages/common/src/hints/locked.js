@@ -1,6 +1,6 @@
 import { Rows, Cols, Squares, cellSquare, RCS } from '@sudoku/common/utilities/constants';
 import { findTargets } from './hints';
-import { cells, vSqs, sameRow, sameCol } from './hints';
+import { hintcells, hintcandidates, vSqs, sameRow, sameCol } from './hints';
 import { canSeeEachOther, canAllSeeEachOther, findTargetsSeenByAll, findTargetsInHouses, getActiveCandidates, getValuesInCommon, includesAny } from './hints';
 
 
@@ -398,8 +398,8 @@ function getSquareValueCells(value, sqix) {
 	var sq = Squares[sqix]; // get the square cells
 	for (var i=0; i<9; ++i) {
 		var cix = sq[i];	// cell index in square
-		var c = cells[cix];
-		if (c.value === 0 && c.activecandidates.includes(value)) {
+		if (hintcells[cix] > 0) continue;
+		if (hintcandidates[cix].includes(value)) {
 			svc.push(cix);
 		}
 	}
@@ -421,8 +421,8 @@ export function lockedCandidates2() {
 			let valcount = 0;
 			for (var c=0; c<9; ++c) {
 				var cix = row[c];	// cell index in square
-				var cel = cells[cix];
-				if (cel.value === 0 && cel.activecandidates.includes(value)) {
+				if (hintcells[cix] > 0) continue;
+				if (hintcandidates[cix].includes(value)) {
 					var sq = cellSquare[cix];
 					sqCounts[sq]++;
 					sqCells[sq].push(cix);
@@ -472,8 +472,8 @@ export function lockedCandidates2() {
 			let valcount = 0;
 			for (var c=0; c<9; ++c) {
 				var cix = col[c];	// cell index in square
-				var cel = cells[cix];
-				if (cel.value === 0 && cel.activecandidates.includes(value)) {
+				if (hintcells[cix] > 0) continue;
+				if (hintcandidates[cix].includes(value)) {
 					var sq = cellSquare[cix];
 					sqCounts[sq]++;
 					sqCells[sq].push(cix);

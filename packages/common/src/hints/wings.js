@@ -1,6 +1,6 @@
-import { RCS, Rows, Cols, Squares, cellRow, cellCol, cellSquare, sqRowCells, sqColCells, sqRows012, sqCols012 } from '@sudoku/common/utilities/constants';
+import { RCS, Rows, Cols, Squares, cellRow, cellCol, cellSquare } from '@sudoku/common/utilities/constants';
 import { findTargets, includesAll, includesAny } from './hints';
-import { cells, findSeenTargets2, findTargetsSeenByAll, cellHasCandidate } from './hints';
+import { hintcells, hintcandidates, findSeenTargets2, findTargetsSeenByAll } from './hints';
 import { sameRow2, sameCol2, sameSq2, inSameSquare } from './hints';
 import { canSeeEachOther, getValuesInCommon, getActiveCandidates, getAllValues } from './hints';
 import { getConjugatePairs, getBivaluePairs, getBivalueList } from "./conjugates";
@@ -40,9 +40,9 @@ function findXYPairs(ppiv, pivots) {
 function findAllTrivalueCells() {
 	var bv = [];
 	for (var cix=0; cix<81; ++cix) {
-		var c = cells[cix];
-		var ac = c.activecandidates;
-		if ( c.value === 0 && ac.length === 3) {
+		if (hintcells[cix] > 0) continue;
+		var ac = hintcandidates[cix];
+		if (ac.length === 3) {
 			bv.push([cix, cellRow[cix], cellCol[cix], cellSquare[cix],  ac]);
 		}
 	}
@@ -70,9 +70,9 @@ export function XWing() {
 			// for each cell in the row check if it contains the value
 			for (var i=0; i<9; ++i) {
 				var cix = row[i];
-				var clx = cells[cix];
+				if (hintcells[cix] > 0) continue;
 				// if the cell contains the value record the column cell
-				if (clx.value === 0 && clx.activecandidates.includes(value)) {
+				if (hintcandidates[cix].includes(value)) {
 					count++;
 					colCells.push(cix);
 				}
@@ -92,9 +92,9 @@ export function XWing() {
 			// for each cell in the row check if it contains the value
 			for (var i=0; i<9; ++i) {
 				var cix = col[i];
-				var clx = cells[cix];
+				if (hintcells[cix] > 0) continue;
 				// if the cell contains the value record the column cell
-				if (clx.value === 0 && clx.activecandidates.includes(value)) {
+				if (hintcandidates[cix].includes(value)) {
 					count++;
 					rowCells.push(cix);
 				}
@@ -223,9 +223,9 @@ export function XYWing() {
 
 	// find pivot cells
 	for (var cix=0; cix<81; ++cix) {
-		var c = cells[cix];
-		var ac = c.activecandidates;
-		if ( c.value === 0 && ac.length === 2) {
+		if (hintcells[cix] > 0) continue;
+		var ac = hintcandidates[cix];
+		if (ac.length === 2) {
 			pivots.push([cix, cellRow[cix], cellCol[cix], cellSquare[cix],  ac]);
 		}
 	}
@@ -341,10 +341,9 @@ export function XYZWing() {
 		// for each cell in the square look for the first wing
 		for (var i=0; i<9; ++i) {
 			var cix1 = sqcells[i];
-			var c = cells[cix1];
+			if (hintcells[cix1] > 0) continue;
 			//console.log(pix, sq, i,cix1)
-			if (c.value > 0) continue;
-			var w1ac = c.activecandidates;
+			var w1ac = hintcandidates[cix1];
 			if ( w1ac.length !== 2) continue;
 			if (!includesAll(pac, w1ac)) continue;	// values not same as pivot
 
@@ -353,9 +352,8 @@ export function XYZWing() {
 			// it also cannot be in the same row or column as the other wing
 
 			for (var cix2=0; cix2<81; ++cix2) {
-				var c = cells[cix2];
-				if (c.value > 0) continue;
-				var w2ac = c.activecandidates;
+				if (hintcells[cix2] > 0) continue;
+				var w2ac = hintcandidates[cix2];
 				if ( w2ac.length !== 2) continue;
 				if (!includesAll(pac, w2ac)) continue;	// must have the pivot values
 				if (includesAll(w1ac, w2ac)) continue;	// cannot be the same values
@@ -383,9 +381,8 @@ export function XYZWing() {
 					var tc = cellCol[tix];
 					if (w2r !== tr && w2c !== tc) continue;	// not same row/col
 					//console.log("tgt?", val, tix, w2r, w2c, tr, tc);
-					var c = cells[tix];
-					if (c.value > 0) continue;
-					var tac = c.activecandidates;
+					if (hintcells[tix] > 0) continue;
+					var tac = hintcandidates[tix];
 					if (tac.includes(val)) {
 						//console.log("found target", tix, tac);
 						targets.push(tix);

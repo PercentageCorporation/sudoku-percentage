@@ -1,5 +1,5 @@
 import { Rows, Cols, Squares, cellRow, cellCol, cellSquare } from '@sudoku/common/utilities/constants';
-import { cells, rcsCounts } from './hints';
+import { hintcells, hintcandidates, rcsCounts } from './hints';
 
 
 //*****************************************************************************
@@ -36,10 +36,9 @@ function hasSingleValueHint(arr) {
 function findValueInRCS(arr, val) {
 	for (var i=0; i<9; ++i) {
 		const cix = arr[i];
-		const cell = cells[cix];
 		//console.log("fvir", rix, val, cix, cell);
-		if (cell.value > 0) continue;
-		if (cell.activecandidates.includes(val)) return {cell: cix, offset: i};
+		if (hintcells[cix] > 0) continue;
+		if (hintcandidates[cix].includes(val)) return {cell: cix, offset: i};
 	}
 	return null;
 }
@@ -88,10 +87,9 @@ export function singleCounts() {
 export function singletons() {
 	var singletons = [];
 	for (var ix=0; ix<81; ++ix) {
-		var c = cells[ix];
-		const ac = c.activecandidates;
-		if (c.value === 0 && ac.length === 1) {
-			//console.log("single:", ix, c.candidates[0]);
+		if (hintcells[ix] === 0 && hintcandidates[ix].length === 1) {
+			let ac = hintcandidates[ix];
+			//console.log("single:", ix, ac);
 			var s = {
 				type: 'cell',
 				row: cellRow[ix],

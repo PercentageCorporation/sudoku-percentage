@@ -18,7 +18,8 @@ import { biforce } from "./forcing2";
 import { suedecoq } from "./suedecoq";
 //import { getConjugatePairs } from "./conjugates";
 
-export var cells = [];
+export var hintcells = [];
+export var hintcandidates = [];
 
 const hintStats = {
 	functions: {},
@@ -117,11 +118,15 @@ export function runHints() {
 	if (gameComplete) return null;
 	//var result;
 
+	let storecells = cellStore.getState().cells;
+	hintcells = Array(81).fill(0);
+	hintcandidates = Array.from({ length: 81 }, () => []);
+	storecells.forEach((c, ix) => {c.value > 0 ? hintcells[ix] = c.value : hintcandidates[ix] = [...c.activecandidates]});
+
 	initCounts();
 	//console.log("hints.js", cells.length)
 
 	let hint;
-	if (hint = tryHint("uniqueRectangles", uniqueRectangles)) return hint;
 
 	if (hint = tryHint("singletons", singletons)) return hint;
 	if (hint = tryHint("singleCounts", singleCounts)) return hint;
@@ -131,6 +136,7 @@ export function runHints() {
 	if (hint = tryHint("lockedCandidates2", lockedCandidates2)) return hint;
 	if (hint = tryHint("hiddenPairs", hiddenPairs)) return hint;
 	if (hint = tryHint("hiddenTriples", hiddenTriples)) return hint;
+	if (hint = tryHint("quads", quads)) return hint;
 	if (hint = tryHint("uniqueRectangles", uniqueRectangles)) return hint;
 	if (hint = tryHint("emptyRectangles", emptyRectangles)) return hint;
 	if (hint = tryHint("suedecoq", suedecoq)) return hint;
@@ -142,11 +148,10 @@ export function runHints() {
 	if (hint = tryHint("WWing", WWing)) return hint;
 	if (hint = tryHint("WXYZWing", WXYZWing)) return hint;
 	if (hint = tryHint("swordfish", swordfish)) return hint;
-	if (hint = tryHint("quads", quads)) return hint;
 	if (hint = tryHint("colors", colors)) return hint;
 	if (hint = tryHint("colorWing", colorWing)) return hint;
 	if (hint = tryHint("als", als)) return hint;
-	if (hint = tryHint("loops", loops)) return hint;
+	//if (hint = tryHint("loops", loops)) return hint;
 	if (hint = tryHint("forcing", forcingChains)) return hint;
 	if (hint = tryHint("forcingBV", biforce)) return hint;
 
@@ -178,8 +183,6 @@ export var cCounts2p = [[],[],[],[],[],[],[],[],[],[]];
 // **********************************************************************
 
 export function initCounts() {
-	cells = cellStore.getState().cells;
-
 	// count how many times a value occurs in a row/col/square
 	vRows = [];
 	vCols = [];
@@ -255,9 +258,8 @@ export function validHouseCandidates(arr) {
 	let vals = new Set();
 	for (var i=0; i<9; ++i) {
 		const cix = arr[i];
-		const cell = cells[cix];
-		if (cell.value > 0) continue;
-		const ac = cell.activecandidates;
+		if (hintcells[cix] > 0) continue;
+		const ac = hintcandidates[cix];
 		if (ac.length === 0) return false;
 		let val = ac[0];
 		if (vals.has(val)) return false;
@@ -269,13 +271,10 @@ export function validHouseCandidates(arr) {
 // count the occurances of the active candidates in a row/col/sq
 export function rcsCounts(arr) {
 	var counts = [0,0,0,0,0,0,0,0,0,0];
-	//console.log(row);
 	for (var i=0; i<9; ++i) {
 		const cix = arr[i];
-		const cell = cells[cix];
-		if (cell.value > 0) continue;
-		const candid = cell.activecandidates;
-		//console.log(cix, candid);
+		if (hintcells[cix] > 0) continue;
+		const candid = hintcandidates[cix];
 		candid.forEach((c) => {counts[c] += 1;});
 	}
 	return counts;
@@ -284,9 +283,9 @@ export function rcsCounts(arr) {
 export function findAllCellsWithValue(value) {
 	var all = [];
 	for (var cix=0; cix<81; ++cix) {
-		var c = cells[cix];
-		var ac = c.activecandidates;
-		if ( c.value === 0 && ac.includes(value)) {
+		if (hintcells[cix] > 0) continue;
+		var ac = hintcandidates[cix];
+		if (ac.includes(value)) {
 			all.push(cix);
 		}
 	}
@@ -299,9 +298,9 @@ export function findTargets(arr,vals,ex) {
 	var alen = arr.length;
 	for (var i=0; i<alen; ++i) {
 		var cix = arr[i];
-		var cel = cells[cix];
+		if (hintcells[cix] > 0) continue;
 		if (!ex.includes(cix)) {
-			if (cel.value === 0 && includesAny(cel.activecandidates, vals)) {
+			if (includesAny(hintcandidates[cix], vals)) {
 				targets.push(cix);
 			}
 		}
@@ -317,9 +316,9 @@ export function findTargetsAll(arr,vals,ex) {
 	var alen = arr.length;
 	for (var i=0; i<alen; ++i) {
 		var cix = arr[i];
-		var cel = cells[cix];
+		if (hintcells[cix] > 0) continue;
 		if (!ex.includes(cix)) {
-			if (cel.value === 0 && includesAll(cel.activecandidates, vals)) {
+			if (includesAll(hintcandidates[cix], vals)) {
 				targets.push(cix);
 			}
 		}
@@ -334,12 +333,12 @@ export function findTargetsOnly(arr,vals,ex) {
 
 	var varlen = vals.length;	// number of values
 	var alen = arr.length;
-		for (var i=0; i<alen; ++i) {
+	for (var i=0; i<alen; ++i) {
 		var cix = arr[i];
-		var cel = cells[cix];
+		if (hintcells[cix] > 0) continue;
 		if (!ex.includes(cix)) {
-			var ac = cel.activecandidates;
-			if (cel.value === 0 && ac.length === varlen && includesAll(ac, vals)) {
+			var ac = hintcandidates[cix];
+			if (ac.length === varlen && includesAll(ac, vals)) {
 				targets.push(cix);
 			}
 		}
@@ -356,8 +355,7 @@ export function findTargetsSeenByBoth(v, cls0, cls1) {
 			if (canSeeEachOther(c0, cix)) {
 				cls1.forEach((c1) => {
 					if (canSeeEachOther(c1, cix)) {
-						var cel = cells[cix];
-						if (cel.value === 0 && cel.activecandidates.includes(v)) cls.add(cix);
+						if (hintcells[cix] === 0 && hintcandidates[cix].includes(v)) cls.add(cix);
 					}
 				})
 			}
@@ -371,17 +369,15 @@ export function findTargetsSeenByBoth(v, cls0, cls1) {
 export function findInternalTargets(cls,vals) {
 	var tgts = new Set();
 	var tgtvals = new Set();
-	cls.forEach((cix) => {
-		var c = cells[cix];
-		if (c.value === 0) {
-			c.activecandidates.forEach((ac) => {
-				if (!vals.includes(ac)) {
-					tgts.add(cix);
-					tgtvals.add(ac);
-				}
-			})
-		}
-	})
+	for (const cix of cls) {
+		if (hintcells[cix] > 0) continue;
+		hintcandidates[cix].forEach((c) => {
+			if (!vals.includes(c)) {
+				tgts.add(cix);
+				tgtvals.add(c);
+			}
+		})
+	}
 
 	if (tgts.size === 0) return null;
 	return [Array.from(tgts).sort(),Array.from(tgtvals).sort()];
@@ -393,15 +389,14 @@ export function getCandidateCells(arr, ex) {
 	var alen = arr.length;
 	for (var i=0; i<alen; ++i) {
 		var cix = arr[i];
-		var cel = cells[cix];
+		if (hintcells[cix] > 0) continue;
 		if (!ex.includes(cix)) {
-			var ac = cel.activecandidates;
-			if (cel.value === 0) targets.push([cix,ac]);
+			var ac = hintcandidates[cix];
+			targets.push([cix,ac]);
 		}
 	}
 	if (targets.length === 0) return null;
 	return targets;
-
 }
 
 export function findCandidatesWithValues(can, vals) {
@@ -568,31 +563,26 @@ export function getAllValues(ac0, ac1) {
 
 
 export function cellHasCandidate(cix, z) {
-	var c = cells[cix];
-	if (c.value > 0) return false;
-	if (c.activecandidates.includes(z)) return true;
+	if (hintcells[cix] > 0) return false;
+	if (hintcandidates[cix].includes(z)) return true;
 	return false;
 }
 
 export function cellHasCandidates(cix, ac) {
-	var c = cells[cix];
-	if (c.value > 0) return false;
-	if (includesAny(c.activecandidates, ac)) return true;
+	if (hintcells[cix] > 0) return false;
+	if (includesAny(hintcandidates[cix], ac)) return true;
 	return false;
 }
 
 export function getActiveCandidates(cix) {
-	var c = cells[cix];
-	if (c.value > 0) return [];
-	return c.activecandidates;
+	if (hintcells[cix] > 0) return [];
+	return hintcandidates[cix];
 }
 
 export function getCommonCandidates(c0, c1) {
-	let cls0 = cells[c0];
-	if (cls0.value > 0) return [];
-	let cls1 = cells[c1];
-	if (cls1.value > 0) return [];
-	let common = cls0.activecandidates.filter(value => cls1.activecandidates.includes(value))
+	if (hintcells[c0] > 0) return [];
+	if (hintcells[c1] > 0) return [];
+	let common = hintcandidates[c0].filter(value => hintcandidates[c1].includes(value))
 	return common;
 }
 
