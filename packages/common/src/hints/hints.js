@@ -127,6 +127,7 @@ export function runHints() {
 	//console.log("hints.js", cells.length)
 
 	let hint;
+	if (hint = tryHint("forcingBV", biforce)) return hint;
 
 	if (hint = tryHint("singletons", singletons)) return hint;
 	if (hint = tryHint("singleCounts", singleCounts)) return hint;

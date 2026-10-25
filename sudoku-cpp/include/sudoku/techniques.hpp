@@ -1,3 +1,4 @@
+#include <iosfwd>
 #pragma once
 #include "sudoku/engine.hpp"
 namespace sudoku::techniques {
@@ -16,5 +17,14 @@ std::optional<Hint> xyWing(const Board& board);
 std::optional<Hint> xyzWing(const Board& board);
 std::optional<Hint> wWing(const Board& board);
 std::optional<Hint> wxyzWing(const Board& board);
+std::optional<Hint> xChain(const Board& board);
+std::optional<Hint> xyChain(const Board& board);
+std::optional<Hint> colors(const Board& board);
+std::optional<Hint> colorWing(const Board& board);
+std::optional<Hint> swordfish(const Board& board);
+std::optional<Hint> suedecoq(const Board& board);
+std::optional<Hint> forcingChains(const Board& board);
+void diagnoseForcingAssumption(const Board& board, int ix, int digit, std::ostream& out);
+std::optional<Hint> biforce(const Board& board);
 std::optional<Hint> aic(const Board& board);
 }

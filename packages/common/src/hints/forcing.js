@@ -68,8 +68,8 @@ function analyzeTarget(tix) {
 		//console.log("targetvalue1", tix, targetvalue);
 
 		let tgts = [[tix,targetvalue]];
-		fccells  = [...hintcells];
-		fccandidates  = [...hintcandidates];
+		fccells  = structuredClone(hintcells);
+		fccandidates  = structuredClone(hintcandidates);
 
 		let conclusion = reachConclusion(tgts);
 		let result = conclusion[0];
@@ -135,6 +135,16 @@ function validateCandidates() {
 	}
 	if  (count === 0) return [2, null];	// solved
 
+	// Naked singles
+	for (let i = 0; i < 81; ++i) {
+		if (fccells[i] !== 0) continue;
+		const ac = fccandidates[i];
+		if (ac.length === 0) return [-1, null];
+		if (ac.length === 1) {
+			singles.push([i, ac[0]]);
+		}
+	}
+
 	// look for single value in row/col/sq
 	for( let i=0; i<9; ++i) {
 		let srcs = singlesInRCS(Rows[i]);
@@ -185,17 +195,28 @@ function validateAllHouseCandidates() {
 }
 
 function validHouseCandidates(arr) {
-	let svals = new Set();
+	let vvals = new Set();	// values in the rcs
+	let cvals = new Set();	// all candidates in the rcs
+	let svals = new Set();	// candidates in the rcs to check for doubles
 	for (var i=0; i<9; ++i) {
 		const cix = arr[i];
-		if (fccells[cix] > 0) continue;
+		if (fccells[cix] > 0) {
+			vvals.add(fccells[cix]);
+			continue;
+		}
 		const ac = fccandidates[cix];
 		if (ac.length === 0) return false;
+		ac.forEach(v => cvals.add(v));	// keep track of the candidates
 		if (ac.length === 1) {
 			let val = ac[0];
+			// double single value in house candidates
 			if (svals.has(val)) return false;
-			svals.add(val);
+			svals.add(val);	// keep track of the value
 		}
+	}
+	for (const v of [1,2,3,4,5,6,7,8,9]) {
+		if (vvals.has(v)) continue;
+		if (!cvals.has(v)) return false;
 	}
 	return true;
 }

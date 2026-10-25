@@ -373,7 +373,6 @@ export const cellStore = create(
 						candidates: [],
 						noncandidates: [],
 						activecandidates: [],
-						selected: false
 					});
 					for (let i = 0; i < 81; ++i) {
 						if (initcells[i].value === 0) {
@@ -395,6 +394,37 @@ export const cellStore = create(
 					useGameStateStore.getState().clearSelectedCell(),
 					useGameStateStore.getState().clearSelectedValue(),
 					get().actions.resetCandidates()
+				},
+
+				loadGameJSON: (json) => {
+					const initcells = [];
+					const gameId = json.name;
+					for (let i = 0; i < 81; ++i) initcells.push(
+					{
+						row: RCS[i][0],
+						col: RCS[i][1],
+						square: RCS[i][2],
+						parity: 0,
+						value: json.values[i],
+						originalValue: json.values[i],
+						solutionValue: 0,
+						candidates: json.candidates[i],
+						noncandidates: [],
+						activecandidates: json.candidates[i],
+					});
+					useGameStateStore.getState().resetState();
+					useHintStore.getState().resetHint();
+					set({
+						cells: initcells,
+						saved: [],
+						difficulty: "",
+						gameId: gameId,
+						gameValid: validateBoard(initcells),
+						gameComplete: 0,
+						gameLoaded: true,
+					}),
+					useGameStateStore.getState().clearSelectedCell(),
+					useGameStateStore.getState().clearSelectedValue()
 				},
 
 				newGame: () => {

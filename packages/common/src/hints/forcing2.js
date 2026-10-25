@@ -41,7 +41,7 @@ export function biforce() {
 
 function findElimination(state, candidates) {
 	const cix = chooseStartingCell(candidates);
-	if (cix < 0) return null;
+	if (cix < 0) return INVALID;
 
 	maxlevel = 0;
 	numinvalid = 0;
@@ -308,6 +308,14 @@ function hasContradiction(state, can) {
 	}
 	if  (count === 0) return SOLVED;
 
+	// check for no candidates
+	for (let i = 0; i < 81; ++i) {
+		if (state[i] !== 0) continue;
+		const ac = can[i];
+		if (ac.length === 0) return INVALID;
+	}
+
+
 	return VALID;
 }
 
@@ -321,17 +329,27 @@ function validateAllHouseCandidates(state, can) {
 }
 
 function validHouseCandidates(state, can, arr) {
-	let svals = new Set();
+	let vvals = new Set();	// values in the rcs
+	let cvals = new Set();	// all candidates in the rcs
+	let svals = new Set();	// candidates in the rcs to check for doubles
 	for (var i=0; i<9; ++i) {
 		const cix = arr[i];
-		if (state[cix] > 0) continue;
+		if (state[cix] > 0) {
+			vvals.add(state[cix]);
+			continue;
+		}
 		const ac = can[cix];
 		if (ac.length === 0) return false;
+		ac.forEach(v => cvals.add(v));	// keep track of the candidates
 		if (ac.length === 1) {
 			let val = ac[0];
 			if (svals.has(val)) return false;
 			svals.add(val);
 		}
+	}
+	for (const v of [1,2,3,4,5,6,7,8,9]) {
+		if (vvals.has(v)) continue;
+		if (!cvals.has(v)) return false;
 	}
 	return true;
 }
@@ -367,8 +385,7 @@ function recomputeCandidates(cls) {
 		else {
 			let fc = findCandidates(cls, ix);
 			// we cannot add candidates, only remove them
-			//can[ix] = fc.filter(c => gamecandidates[ix].includes(c));
-			can[ix] = fc;
+			can[ix] = fc.filter(c => gamecandidates[ix].includes(c));
 		}
 	}
 

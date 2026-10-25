@@ -96,13 +96,21 @@ std::optional<Hint> HintEngine::findNextHint(const Board& board) const {
     if (auto hint = techniques::hiddenPairs(board)) return hint;
     if (auto hint = techniques::hiddenTriples(board)) return hint;
     if (auto hint = techniques::xWing(board)) return hint;
+    if (auto hint = techniques::swordfish(board)) return hint;
     if (auto hint = techniques::uniqueRectangles(board)) return hint;
     if (auto hint = techniques::emptyRectangles(board)) return hint;
+    if (auto hint = techniques::xChain(board)) return hint;
+    if (auto hint = techniques::xyChain(board)) return hint;
     if (auto hint = techniques::xyWing(board)) return hint;
     if (auto hint = techniques::xyzWing(board)) return hint;
     if (auto hint = techniques::wWing(board)) return hint;
     if (auto hint = techniques::wxyzWing(board)) return hint;
+    if (auto hint = techniques::colors(board)) return hint;
+    if (auto hint = techniques::colorWing(board)) return hint;
+    if (auto hint = techniques::suedecoq(board)) return hint;
     if (auto hint = techniques::aic(board)) return hint;
+    if (auto hint = techniques::forcingChains(board)) return hint;
+    if (auto hint = techniques::biforce(board)) return hint;
     return std::nullopt;
 }
 

@@ -5,7 +5,7 @@ import { useScreenStore } from '@sudoku/common/store/screenStore';
 import { getSampleGame } from "@sudoku/common/utilities/games";
 import { getGame } from "@sudoku/common/utilities/games";
 import { resetHintStats } from "@sudoku/common/hints/hints";
-import { downloadSudokuFixture } from "@sudoku/common/utilities/exportBoard.js";
+import { downloadSudokuFixture, importSudokuFixture } from "@sudoku/common/utilities/exportBoard.js";
 import LoadGameModal from "@sudoku/common/components/LoadGameModal";
 import GameGrid from "@sudoku/common/components/GameGrid";
 import PlayMenu from "/src/components/PlayMenu";
@@ -99,6 +99,11 @@ export default function Game() {
 	function handleExportJSON(e) {
 		e.preventDefault();
 		downloadSudokuFixture(gameId);
+	}
+
+	function handleLoadJSON(e) {
+		e.preventDefault();
+		importSudokuFixture(gameId);
 	}
 
 	function loadConfirm(ix) {
@@ -196,14 +201,6 @@ export default function Game() {
 					>
 						Restore Game State
 					</button>
-					<button
-						type="button"
-						tabIndex={-1}
-						onClick={(e) => handleExportJSON(e)}
-						className="px-2 py-2 bg-blue-300 rounded hover:cursor-pointer"
-						>
-						Export JSON
-					</button>
 				</div>
 				<div className="flex flex-row justify-between mt-2">
 					<button
@@ -249,6 +246,23 @@ export default function Game() {
 						className="px-4 py-2 bg-blue-300 rounded hover:cursor-pointer"
 					>
 						Show Statistics
+					</button>
+				</div>
+				<div className="flex flex-row justify-between mt-2">
+					<button
+						type="button"
+						onClick={(e) => handleLoadJSON(e)}
+						className="px-2 py-2 bg-orange-300 rounded hover:cursor-pointer"
+					>
+						Load JSON
+					</button>
+					<button
+						type="button"
+						tabIndex={-1}
+						onClick={(e) => handleExportJSON(e)}
+						className="px-2 py-2 bg-blue-300 rounded hover:cursor-pointer"
+						>
+						Export JSON
 					</button>
 				</div>
 			</div>

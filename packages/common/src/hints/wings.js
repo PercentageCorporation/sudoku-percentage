@@ -399,7 +399,7 @@ export function XYZWing() {
 						cells: cls,
 						values: [val],
 						targets: targets,
-						msg: `XYZ-Wing: Cells: ${cls}, Value: ${val}`
+						msg: `XYZ-Wing: Cells: ${targets}, Value: ${val}`
 					}
 					xyzHints.push(h);
 					return xyzHints;

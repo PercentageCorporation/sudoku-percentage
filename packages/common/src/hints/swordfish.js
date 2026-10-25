@@ -111,6 +111,8 @@ export function swordfish() {
 						var rc23k = rCounts23[v][k];
 						var cicr = columnsInCommon23(rc23i,rc23j,rc23k, v);
 						if (cicr) {
+							if (cicr[0].length !== 3) continue;
+							if (cicr[1].length > 3) continue;
 							//console.log("cicr", v, [rc23i, rc23j, rc23k], cicr[1], cicr[0]);
 							cr.push([v, [rc23i, rc23j, rc23k], cicr[1], cicr[0]])
 						}
@@ -131,11 +133,9 @@ export function swordfish() {
 						var cicc = rowsInCommon23(cc23i,cc23j,cc23k, v);
 						if (cicc) {
 							//console.log("cicc", v, [cc23i, cc23j, cc23k], cicc[1], cicc[0]);
-							if (cicc[1].length > 3) {
-
-							} else {
-								cc.push([v, [cc23i, cc23j, cc23k], cicc[1], cicc[0]])
-							}
+							if (cicc[0].length !== 3) continue;
+							if (cicc[1].length > 3) continue;
+							cc.push([v, [cc23i, cc23j, cc23k], cicc[1], cicc[0]])
 						}
 					}
 				}
