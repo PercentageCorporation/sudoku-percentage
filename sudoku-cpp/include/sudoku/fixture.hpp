@@ -8,5 +8,6 @@ struct Fixture {
     Board board;
 };
 // Strict sudoku-board-v1 loader. Rejects malformed dimensions, indices and digits.
+Fixture parseFixtureJson(const std::string& json);
 Fixture loadFixture(const std::string& filename);
 }

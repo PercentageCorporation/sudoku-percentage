@@ -3,6 +3,7 @@ import { cellStore, useCellActions, useGameStateStore } from "@sudoku/common/sto
 import { useHintStore } from "@sudoku/common/store/hintStore";
 import { validateMove, formatSolution } from "@sudoku/common/utilities/utilities";
 import { runHints, showHintStats  } from '@sudoku/common/hints/hints';
+import { getCppHint } from '@sudoku/common/hints/cpphints';
 
 export default function PlayMenu() {
 	const { selectedValue, selectedCell, setSelectedValue, clearSelectedValue, clearSelectedCell, numbersUsed, setShowBivalue, setShowConjugates, resetState } = useGameStateStore();
@@ -43,13 +44,15 @@ export default function PlayMenu() {
 		e.preventDefault();
 		console.log("doAllHints");
 		setHintMsg("Starting");
-		let h = runHints();
+		let h = getCppHint();
+		//let h = runHints();
 		while (h !== null) {
 			setHintMsg(h.msg);
 			setHint(h);
 			processHint(h);
 			await delay(200);
-			h = runHints();
+			//h = runHints();
+			h = getCppHint();
 		}
 	}
 
@@ -108,7 +111,8 @@ export default function PlayMenu() {
 			resetHint();
 			let solved = checkGameSolved();
 			if (solved === 0) {
-				let h = runHints();
+				//let h = runHints();
+				let h = getCppHint();
 				if (h) {
 					console.log("hint:", h, h.msg);
 					setHintMsg(h.msg);
@@ -119,10 +123,10 @@ export default function PlayMenu() {
 				console.log("SOLVED");
 				//console.log(solutionLog);
 				//showHintStats();
-				const stats = useHintStore.getState().getHintStats();
+				//const stats = useHintStore.getState().getHintStats();
 
-				console.table(stats.functions);
-				console.table(stats.types);
+				//console.table(stats.functions);
+				//console.table(stats.types);
 			}
 		}
 	}
@@ -135,7 +139,8 @@ export default function PlayMenu() {
 			return;
 		}
 		resetState();
-		var h = runHints();
+		//var h = runHints();
+		let h = getCppHint();
 		if (!h) {
 			//resetHint();
 			console.log("No Hints");

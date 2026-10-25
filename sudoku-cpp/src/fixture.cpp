@@ -49,10 +49,8 @@ struct Reader {
     }
 };
 }
-Fixture loadFixture(const std::string& filename) {
-    std::ifstream in(filename);
-    if (!in) throw std::runtime_error("Cannot open fixture: " + filename);
-    Reader r{std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>())};
+Fixture parseFixtureJson(const std::string& json) {
+    Reader r{json};
     r.expect('{');
     std::string schema, indexing, name;
     std::vector<int> values;
@@ -89,5 +87,10 @@ Fixture loadFixture(const std::string& filename) {
         fixture.board.cells[i].candidates = mask;
     }
     return fixture;
+}
+Fixture loadFixture(const std::string& filename) {
+    std::ifstream in(filename);
+    if (!in) throw std::runtime_error("Cannot open fixture: " + filename);
+    return parseFixtureJson(std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()));
 }
 } // namespace sudoku

@@ -21,6 +21,14 @@ import { suedecoq } from "./suedecoq";
 export var hintcells = [];
 export var hintcandidates = [];
 
+export function initHintCells() {
+	if (hintcells.length === 81 && hintcandidates.length === 81) return;
+	let storecells = cellStore.getState().cells;
+	hintcells = Array(81).fill(0);
+	hintcandidates = Array.from({ length: 81 }, () => []);
+	storecells.forEach((c, ix) => {c.value > 0 ? hintcells[ix] = c.value : hintcandidates[ix] = [...c.activecandidates]});
+}
+
 const hintStats = {
 	functions: {},
 	types: {}
@@ -118,11 +126,7 @@ export function runHints() {
 	if (gameComplete) return null;
 	//var result;
 
-	let storecells = cellStore.getState().cells;
-	hintcells = Array(81).fill(0);
-	hintcandidates = Array.from({ length: 81 }, () => []);
-	storecells.forEach((c, ix) => {c.value > 0 ? hintcells[ix] = c.value : hintcandidates[ix] = [...c.activecandidates]});
-
+	initHintCells();
 	initCounts();
 	//console.log("hints.js", cells.length)
 

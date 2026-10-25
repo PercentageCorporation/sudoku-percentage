@@ -109,15 +109,16 @@ export default function Game() {
 	function loadConfirm(ix) {
 		//console.log("load game", ix);
 		setLoadSavedGame(false);
+		resetHintStats();
+		resetState();
+		clearSolutionLog();
+
 		var game = getGame(ix);
 		//console.log("load game", ix, game.description);
 		//console.log(game.game);
 		if (game) {
 			//console.log("load game", ix, game.description);
 			loadGame(game.game, game.solution, game.description);
-			resetState();
-			clearSolutionLog();
-			resetHintStats();
 			//navigate("/", { replace: true });
 		}
 	}

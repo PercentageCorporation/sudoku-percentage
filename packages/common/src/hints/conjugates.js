@@ -1,12 +1,12 @@
 import { Rows, Cols, Squares } from '@sudoku/common/utilities/constants';
 import { includesAll, canSeeEachOther, includesAny } from './hints';
-import { hintcells, hintcandidates } from './hints';
+import { initHintCells, hintcells, hintcandidates } from './hints';
 
 let localcells = [];
 let conjugateCells = null;
 let conjugatePairs = [];
 let conjugatesByCell = null;
-let conjugatesByValue = null;
+let conjugatesByValue = null;	// conjugate pairs sorted by value
 let bivalueCells = null;
 let bivaluePairs = [];
 let bivaluesByValue = null;
@@ -15,6 +15,7 @@ let bivaluesByValue = null;
 // functions called from anywhere
 
 export function getConjugatePairs() {
+	initHintCells();
 	localcells = hintcells;
 	if (localcells !== conjugateCells) {
 		conjugatePairs = calculateConjugatePairs();
@@ -26,12 +27,39 @@ export function getConjugatePairs() {
 }
 
 export function getBivaluePairs() {
+	initHintCells();
 	localcells = hintcells;
 	if (localcells !== bivalueCells) {
 		bivaluePairs = findAllBivalueCells();;
 		bivalueCells = localcells;
 	}
 	return bivaluePairs;
+}
+
+// find all cells with just 2 candidates
+// return array sorted by candidate pairs
+// bv: [ cix, [ac] ]
+export function findAllBivalueCells() {
+	bivaluesByValue = Array.from({ length: 10 }, () => []);
+
+	var bv = [];
+	for (var cix=0; cix<81; ++cix) {
+		if (hintcells[cix] > 0) continue;
+		var ac = hintcandidates[cix];
+		if (ac.length === 2) bv.push([cix,  ac]);
+	}
+
+	if (bv.length === 0) return bv;
+
+	bv.sort((a, b) => a[1][1] - b[1][1] || a[1][0] - b[1][0]);
+	bivaluesByValue = Array.from({ length: 10 }, () => []);
+
+	bv.forEach((bp, ix) => {
+		bivaluesByValue[bp[1][0]].push(ix);
+		bivaluesByValue[bp[1][1]].push(ix);
+	});
+
+	return bv;
 }
 
 // find cpairs of same value with common endpoint
@@ -118,14 +146,27 @@ export function getConjugatePairsForValue(cpairs, v) {
 // is the cell in a conjugate pair
 // return 1 for endpoint1 and 2 for endpoint2
 export function cellInConjugatePair(cix, value) {
-	if (value < 1 || value > 9) return 0;
 	getConjugatePairs();
-	for (const cpix of conjugatesByValue[value]) {
-		let cp = conjugatePairs[cpix];
-		if (cix === cp[1][0]) return 1;
-		if (cix === cp[2][0]) return 2;
+	if (conjugatePairs.length === 0) return 0;
+	if (conjugatesByCell[cix].length === 0) return 0;
+	let cps = conjugatesByCell[cix];	// get list of conjugates
+	let cp = null;
+	if (value < 0) {
+		let cpix = cps[0];	// just get the first one
+		cp = conjugatePairs[cpix]
+	} else {
+		for (const cpx of cps) {
+			let cpn = conjugatePairs[cpx];
+			if (cpn[0] !== value) continue;
+			cp = cpn;
+			break;
+		}
 	}
-	return 0;
+	if (cp === null) return 0;
+	if (cix === cp[1][0]) return 1;
+	if (cix === cp[2][0]) return 2;
+	// which end is which
+	return 3;
 }
 
 // Find exactly two cells containing a candidate in a house.
@@ -210,6 +251,7 @@ function calculateConjugatePairs() {
 // is the cell in a bivalue pair
 export function cellInBivaluePair(cix, value) {
 	getBivaluePairs();
+	if (bivaluePairs.length === 0) return 0;
 
 	if (value > 0) {
 		return bivaluesByValue[value].some(ix => bivaluePairs[ix][0] === cix) ? 1 : 0;
@@ -236,30 +278,6 @@ export function findSeenBivaluePairs(ep, value) {
 	return bvp;
 }
 
-// find all cells with just 2 candidates
-// return array sorted by candidate pairs
-// bv: [ cix, [ac] ]
-export function findAllBivalueCells() {
-	bivaluesByValue = Array.from({ length: 10 }, () => []);
-
-	var bv = [];
-	for (var cix=0; cix<81; ++cix) {
-		if (hintcells[cix] > 0) continue;
-		var ac = hintcandidates[cix];
-		if (ac.length === 2) bv.push([cix,  ac]);
-	}
-
-	bv.sort((a, b) => a[1][1] - b[1][1] || a[1][0] - b[1][0]);
-	bivaluesByValue = Array.from({ length: 10 }, () => []);
-
-	bv.forEach((bp, ix) => {
-		bivaluesByValue[bp[1][0]].push(ix);
-		bivaluesByValue[bp[1][1]].push(ix);
-	});
-
-	return bv;
-}
-
 // list all bivalue cells by pair where there are two or more cells
 // bvp: [ [ac], [[cix0, rcs0], [cix1, rcs1], ... ] ]
 
@@ -267,6 +285,7 @@ export function getBivalueList() {
 
 	var bvpairs = getBivaluePairs();
 	var bvplen = bvpairs.length;
+	if (bvplen === 0 ) return [];
 	//console.log("bvpairs", bvpairs)
 	// bv: [ cix, [ac] ]
 	// pack the pairs

@@ -18,8 +18,13 @@ function Candidates({ix}) {
 		if (cicp > 0 ) bg = (cicp === 1) ? " bg-yellow-200" : " bg-yellow-400";
 	}
 	if (showBivalue)  {
-		let cibp = cellInBivaluePair(ix,selectedValue);
-		if (cibp > 0) bg = cibp > 0 ? " bg-yellow-200" : "";
+		let cibp = ac.length === 2;
+		if (cibp) {
+			if (selectedValue >= 0)
+				bg = ac.includes(selectedValue) ? " bg-yellow-200" : "";
+			else
+				bg = " bg-yellow-200";
+		}
 	}
 
 	//console.log(ix, can, noncan);
@@ -112,141 +117,142 @@ function Cell({ix}) {
 			else
 				selMode = 1;
 		}
-	} else if (cell.parity > 0) {
-		switch (cell.parity) {
-			case 0:
-				break;
-			case 1:
-				selMode = 10;
-				break;
-			case 2:
-				selMode = 11;
-				break;
-			case 3:
-				selMode = 12;
-				break;
-			case 4:
-				selMode = 13;
-				break;
-		}
-	} else if (hint.type) {
-		switch (hint.type) {
-			case 'cell':
-			case 'cellR':
-			case 'cellC':
-			case 'cellS':
-			case 'forced2S':
-				if (hint.targetcells[0] === ix) selMode = 3;
-				break;
+	} else if (hint !== null) {
+		if (hint.cells0 && hint.cells0.includes(ix))
+			selMode = 8;
+		else if (hint.cells1 && hint.cells1.includes(ix))
+			selMode = 9;
+		else if (hint.cells1 && hint.cells1.includes(ix))
+			selMode = 10;
+		else if (hint.targetcells && hint.targetcells[0] === ix)
+			selMode = 3;
+		else if (hint.targets && hint.targets.includes(ix))
+			selMode = 3;
+		else if (hint.cells && hint.cells.includes(ix))
+			selMode = 12;
 
-			case "colorWing":
-			case "xChain":
-			case 'aicI':
-			case 'aicII':
-			case 'aicIloop':
-				if (hint.targets.includes(ix))
-					selMode = 3;
-				else if (hint.parity1.includes(ix))
-					selMode = 10;
-				else if (hint.parity2.includes(ix))
-					selMode = 11;
-				else if (hint.parity3 && hint.parity3.includes(ix))
-					selMode = 12;
-				else if (hint.parity4 && hint.parity4.includes(ix))
-					selMode = 13;
-
-				if (hint.cells[0] === ix) selMode = 14;
-				if (hint.cells[1] === ix) selMode = 15;
-
-				break;
-			case "colorsI":
-			case "colorsII":
-			case "alsXZ1":
-			case "alsXZ2":
-			case "sdc":
-				if (hint.cells0.includes(ix))
-					selMode = 8;
-				else if (hint.cells1.includes(ix))
-					selMode = 9;
-				else if (hint.targets.includes(ix))
-						selMode = 3;
-				break;
-
-			case "wxyzWing":
-				if (hint.cells0.includes(ix))
-					selMode = 15;
-				else if (hint.cells1.includes(ix))
-					selMode = 11;
-				else if (hint.cells2.includes(ix))
-					selMode = 13;
-				else if (hint.targets.includes(ix))
-					selMode = 3;
-				break;
-
-			case "swordfish":
-				if (hint.targets.includes(ix))
-					selMode = 3;
-				else if (hint.rows.includes(rcs[0]))
-					selMode = 8;
-				else if (hint.cols.includes(rcs[1]))
-					selMode = 9;
-				break;
-
-			case "locked1":
-			case "locked2":
-			case "nakedPair":
-			case "nakedTriple":
-			case "hiddenPair":
-			case "hiddenTriple":
-			case "quad":
-			case 'wWing':
-			case 'xWing':
-			case 'xyWing':
-			case 'xyTriple':
-			case 'xyChain':
-			case 'xyzWing':
-			case 'urType1':
-			case 'urType2':
-			case 'urType3':
-			case 'urType4':
-			case 'urType5':
-			case 'urType6':
-			case 'urType7':
-			case 'emptyRectangle':
-				if (hint.cells.includes(ix))
-					selMode = 2;
-				if (hint.targets.includes(ix))
-					selMode = 3;
-			break;
-
-			case 'forced':
-			case 'forced2':
-				if (hint.targets.includes(ix)) {
-					selMode = 3;
-				}
-				break;
-
-			case 'row':
-				if (hint.row >= 0 && hint.row === rcs[0]) selMode = 3;
-				break;
-
-			case 'col':
-				if (hint.col >= 0 && hint.col === rcs[1]) selMode = 3;
-				break;
-
-			default:
-				if (hint.cells[0] === ix) {
-					//console.log(hint);
-					selMode = 6;
-				}
-				break;
-		}
-
-	} else {
-		if (selectedCell === ix)
-			selMode = 2;
-		else if (showBivalue && cell.activecandidates.length === 2)
-			selMode = 1;
+// 		if (hint.type) {
+// 		switch (hint.type) {
+// 			case 'cell':
+// 			case 'cellR':
+// 			case 'cellC':
+// 			case 'cellS':
+// 			case 'forced2S':
+// 				if (hint.targetcells && hint.targetcells[0] === ix) selMode = 3;
+// 				break;
+//
+// 			case "colorWing":
+// 			case "xChain":
+// 			case 'aicI':
+// 			case 'aicII':
+// 			case 'aicIloop':
+// 				if (hint.targets.includes(ix))
+// 					selMode = 3;
+// 				else if (hint.parity1.includes(ix))
+// 					selMode = 10;
+// 				else if (hint.parity2.includes(ix))
+// 					selMode = 11;
+// 				else if (hint.parity3 && hint.parity3.includes(ix))
+// 					selMode = 12;
+// 				else if (hint.parity4 && hint.parity4.includes(ix))
+// 					selMode = 13;
+//
+// 				if (hint.cells[0] === ix) selMode = 14;
+// 				if (hint.cells[1] === ix) selMode = 15;
+//
+// 				break;
+// 			case "colorsI":
+// 			case "colorsII":
+// 			case "alsXZ1":
+// 			case "alsXZ2":
+// 			case "sdc":
+// 				if (hint.cells0.includes(ix))
+// 					selMode = 8;
+// 				else if (hint.cells1.includes(ix))
+// 					selMode = 9;
+// 				else if (hint.targets.includes(ix))
+// 						selMode = 3;
+// 				break;
+//
+// 			case "wxyzWing":
+// 				if (hint.cells0.includes(ix))
+// 					selMode = 15;
+// 				else if (hint.cells1.includes(ix))
+// 					selMode = 11;
+// 				else if (hint.cells2.includes(ix))
+// 					selMode = 13;
+// 				else if (hint.targets.includes(ix))
+// 					selMode = 3;
+// 				break;
+//
+// 			case "swordfish":
+// 				if (hint.targets.includes(ix))
+// 					selMode = 3;
+// 				else if (hint.rows.includes(rcs[0]))
+// 					selMode = 8;
+// 				else if (hint.cols.includes(rcs[1]))
+// 					selMode = 9;
+// 				break;
+//
+// 			case "locked":
+// 			case "locked1":
+// 			case "locked2":
+// 			case "nakedPair":
+// 			case "nakedTriple":
+// 			case "hiddenPair":
+// 			case "hiddenTriple":
+// 			case "quad":
+// 			case 'wWing':
+// 			case 'xWing':
+// 			case 'xyWing':
+// 			case 'xyTriple':
+// 			case 'xyChain':
+// 			case 'xyzWing':
+// 			case 'urType1':
+// 			case 'urType2':
+// 			case 'urType3':
+// 			case 'urType4':
+// 			case 'urType5':
+// 			case 'urType6':
+// 			case 'urType7':
+// 			case 'emptyRectangle':
+// 				if (hint.cells.includes(ix))
+// 					selMode = 2;
+// 				if (hint.targets.includes(ix))
+// 					selMode = 3;
+// 			break;
+//
+// 			case 'forced':
+// 			case 'forced2':
+// 				if (hint.targets.includes(ix)) {
+// 					selMode = 3;
+// 				}
+// 				break;
+//
+// 			case 'row':
+// 				if (hint.row >= 0 && hint.row === rcs[0]) selMode = 3;
+// 				break;
+//
+// 			case 'col':
+// 				if (hint.col >= 0 && hint.col === rcs[1]) selMode = 3;
+// 				break;
+//
+// 			default:
+// 				console.log("hint", hint)
+// 				if (hint.cells && hint.cells.length > 0) {
+// 					if (hint.cells[0] === ix) {
+// 						//console.log(hint);
+// 						selMode = 6;
+// 					}
+// 				}
+// 				break;
+// 		}
+//
+// 	} else {
+// 		if (selectedCell === ix)
+// 			selMode = 2;
+// 		else if (showBivalue && cell.activecandidates.length === 2)
+// 			selMode = 1;
 	}
 
 	var cn = "bg-white";

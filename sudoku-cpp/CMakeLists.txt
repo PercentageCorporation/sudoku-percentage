@@ -118,3 +118,23 @@ add_executable(sudoku_biforce_regression tests/biforce_regression.cpp)
 target_link_libraries(sudoku_biforce_regression PRIVATE sudoku_engine)
 add_test(NAME diagnostic_biforce_forced2 COMMAND sudoku_biforce_regression
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/forced2.json)
+
+# Build with: emcmake cmake -S . -B build-wasm -DSUDOKU_BUILD_WASM=ON
+option(SUDOKU_BUILD_WASM "Build browser WebAssembly bridge" OFF)
+if(SUDOKU_BUILD_WASM)
+    if(NOT EMSCRIPTEN)
+        message(FATAL_ERROR "SUDOKU_BUILD_WASM requires the Emscripten toolchain (emcmake)")
+    endif()
+    add_executable(sudoku_wasm src/wasm/bindings.cpp)
+    target_link_libraries(sudoku_wasm PRIVATE sudoku_engine)
+    target_link_options(sudoku_wasm PRIVATE
+        "--bind" "-sMODULARIZE=1" "-sEXPORT_ES6=1"
+        "-sENVIRONMENT=web,worker,node" "-sALLOW_MEMORY_GROWTH=1"
+        "-sFILESYSTEM=0")
+    set_target_properties(sudoku_wasm PROPERTIES SUFFIX ".js" OUTPUT_NAME "sudoku")
+endif()
+
+add_executable(sudoku_json_interface_tests tests/json_interface_tests.cpp)
+target_link_libraries(sudoku_json_interface_tests PRIVATE sudoku_engine)
+add_test(NAME sudoku_json_interface_tests COMMAND sudoku_json_interface_tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/forced2.json)

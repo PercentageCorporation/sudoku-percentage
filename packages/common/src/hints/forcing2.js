@@ -257,6 +257,11 @@ function chooseStartingCell(can) {
 		if (can[i] !== null && can[i].length === 2) return i;
 	}
 
+	// no 2s, go for 3s
+	for( let i=0; i<81; ++i) {
+		if (can[i] !== null && can[i].length === 3) return i;
+	}
+
 	//console.log("can", can);
 	let cpairs = getConjugatePairsBlockMajor(can);
 	//console.log("cp", cpairs);
@@ -265,10 +270,6 @@ function chooseStartingCell(can) {
 	//console.log("strongs", strongs);
 	if (strongs.length > 0) return strongs[0][0];
 
-	// no 2s, go for 3s
-	for( let i=0; i<81; ++i) {
-		if (can[i] !== null && can[i].length === 3) return i;
-	}
 	return -1;
 }
 
