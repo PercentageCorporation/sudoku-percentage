@@ -1,6 +1,6 @@
 #include "sudoku/engine.hpp"
 #include "sudoku/fixture.hpp"
-#include "sudoku/techniques.hpp"
+#include "sudoku/technique_dispatch.hpp"
 #include <emscripten/bind.h>
 #include <sstream>
 #include <stdexcept>
@@ -41,18 +41,10 @@ std::string serialize(const std::optional<sudoku::Hint>& hint) {
     o << "]}";
     return o.str();
 }
-std::optional<sudoku::Hint> technique(const sudoku::Board& b, const std::string& name) {
-    if (name == "next") return sudoku::HintEngine{}.findNextHint(b);
-    if (name == "biforce") return sudoku::techniques::biforce(b);
-    if (name == "forcing") return sudoku::techniques::forcingChains(b);
-    if (name == "singletons") return sudoku::techniques::singletons(b);
-    if (name == "singleCounts") return sudoku::techniques::singleCounts(b);
-    throw std::invalid_argument("Unknown technique: " + name);
-}
 std::string getSudokuHint(const std::string& boardJson, const std::string& name) {
     auto fixture = sudoku::parseFixtureJson(boardJson);
     if (!fixture.board.valid()) throw std::invalid_argument("Invalid Sudoku board");
-    return serialize(technique(fixture.board, name));
+    return serialize(sudoku::findHintByName(fixture.board, name));
 }
 }
 EMSCRIPTEN_BINDINGS(sudoku_bridge) {

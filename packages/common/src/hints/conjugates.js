@@ -64,14 +64,13 @@ export function findAllBivalueCells() {
 
 // find cpairs of same value with common endpoint
 // cpairs: [ value, [cix0, [ac0]], [cix1, [ac1]] ]
-export function findCommonConjugatePairs(ep, vals) {
+export function findCommonConjugatePairs(ep, value) {
 	getConjugatePairs();
 	var ccp = [];
 	// for each conjugate pair start the chains with their endpoints
 	for (const cpix of conjugatesByCell[ep]) {
 		var cp = conjugatePairs[cpix];
-		var value = cp[0];
-		if (!vals.includes(value)) continue;
+		if (cp[0] !== value) continue;
 		var cep0 = cp[1][0];
 		var cep1 = cp[2][0];
 		if (ep === cep0) {

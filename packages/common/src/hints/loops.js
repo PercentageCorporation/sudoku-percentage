@@ -2,20 +2,64 @@ import { cellStore } from '@sudoku/common/store/store';
 import { RCS, Rows } from '@sudoku/common/utilities/constants';
 import { getCommonCandidates } from './hints';
 import { canSeeEachOther, findTargetsSeenByAll, cellHasCandidate } from './hints';
-import { getConjugatePairs, getBivaluePairs, findCommonConjugatePairs, findSeenConjugatePairsWithVals, findSeenBivaluePairs } from "./conjugates";
+import { getConjugatePairs, getBivaluePairs, findCommonConjugatePairs, findSeenConjugatePairs, findSeenBivaluePairs } from "./conjugates";
 
 //*****************************************************************************
 // common functions
 
+let maxlevel = 0;
 let chain = [];
 let cpairs = [];
 let bivals = [];
 
+function findDuplicateLeaves(chain) {
+	const seen = new Map();
+	const duplicates = [];
+
+	for (let i = 0; i < chain.length; ++i) {
+		const link = chain[i];
+
+		// Only examine leaves
+		if (link[6].length !== 0) continue;
+
+		// Identify the logical state of the leaf
+		const key = JSON.stringify([
+			link[0],  // cell
+			link[2],  // candidate
+			link[3],  // alternate candidate
+			link[4]   // weak/strong
+		]);
+
+		if (seen.has(key)) {
+			duplicates.push([seen.get(key), i]);
+		} else {
+			seen.set(key, i);
+		}
+	}
+
+	return duplicates;
+}
+
+function alreadyLinked(clix, ep, value, type) {
+	return chain[clix][6].some(ix => {
+		const link = chain[ix];
+
+		return link[0] === ep &&
+		link[2] === value &&
+		link[4] === type;
+	});
+}
+
 // chain link: [ ep, ac, invalue, outvalue, 'sw', prev link, [next links]];
 var prevj = 0;
 function endpointsInPath(ep0, ep1, clix) {
-
 	let j = clix;
+	// check the forward links first
+	let fw = chain[j][6];
+	for (const f of fw) {
+		if (chain[f][0] === ep0) return false;
+		if (chain[f][0] === ep1) return false;
+	}
 	while (j >= 0) {
 		prevj = j;
 		let cp0 = chain[j][0];
@@ -29,6 +73,11 @@ function endpointsInPath(ep0, ep1, clix) {
 
 function endpointInPath(ep, clix) {
 	let j = clix;
+	// check the forward links first
+	let fw = chain[j][6];
+	for (const f of fw) {
+		if (chain[f][0] === ep) return false;
+	}
 	while (j >= 0) {
 		prevj = j;
 		let cp0 = chain[j][0];
@@ -40,27 +89,113 @@ function endpointInPath(ep, clix) {
 	return false;
 }
 
+function getCurrentPath(startix) {
+	let path = [];
+	let j = startix;
+	// follow the path up
+	while (j >= 0) {
+		let linkj = chain[j];
+		path.push(j);
+		j = linkj[5];	// back up the chain
+	}
+	// long enough and odd number of links
+	let plen = path.length;
+	if (plen < 3 ) return [];
+
+	path.reverse();
+	let cpath = [];
+	path.forEach((p) => {
+		cpath.push([chain[p][0],chain[p][2],chain[p][3]]);
+	})
+
+	return cpath;
+}
 
 // link: [ ep, ac, incoming candidate, outgoing candidate, weak/strong, previous link,  [next links]]
-function nextLink(clix) {
-	console.log("nextlink", clix)
-	if (chain.length > 2) {
-		let paths = getAICPaths(chain);
-		let loops = processPaths(paths);
-		if (loops.length > 0) {
-			console.log("********************");
-			console.log(loops);
-			return loops;
-		}
-	}
-
-	//if (clix > 20) return;
+function nextLink(clix, level) {
 	let curlink = chain[clix];	// current link in the chain
+	++level;
+	if (level > maxlevel) maxlevel = level;
+	//console.log("nextlink", clix, level, curlink[0]);
+	//let sc = structuredClone(chain);
+	//console.log(sc);
+
 	let ep = curlink[0];	// incoming link endpoint
 	let epac = curlink[1];	// candiates
 	let epval = curlink[2];
 	let bvval = curlink[3];	// incoming bivalue alternate candidate
 	let wsin = curlink[4];	// weak/strong
+
+	if (chain.length > 2) {
+		if (curlink[4] === 's') {
+			let startep = chain[0][0];
+			let startval = chain[0][2];
+
+			// check for ACI II
+			if (startval !== epval) {
+				// make sure the endpoints can see each other
+				if (canSeeEachOther(ep, startep)) {
+					let tgts = [];
+					if (cellHasCandidate(ep, startval)) {
+						tgts.push([ep,startval]);
+					}
+					if (cellHasCandidate(startep, epval)) {
+						tgts.push([startep,epval]);
+					}
+					if (tgts.length > 0) {
+						let path = getCurrentPath(clix);
+						let aic2 = [startval, epval, startep, ep, tgts, path];
+						let h = makeHint2(aic2);
+						console.log(aic2);
+						console.log(chain);
+						return [h];
+					}
+				}
+			}
+
+			// check for AIC I
+			if (startval === epval) {
+				let ep0 = chain[0][0];
+				// make sure the endpoints cannot see each other
+				if (canSeeEachOther(ep0, ep)) {
+					// check for AIC I Loop
+					let com = getCommonCandidates(ep0, ep);
+					if (com.length > 0) {
+						let path = getCurrentPath(clix);
+						let tgts = findLoopTargets(path);
+						//console.log("aic1loop", sval, sep, epi, tgts, apath);
+						if (tgts.length > 0) {
+							let aic1l = [startval, epval, startep, ep, tgts, path];
+							let h = makeLoopHint(aic1l);
+							console.log(aic1l);
+							console.log(chain);
+							return [h];
+						}
+					}
+				} else {	// cannot see each other
+					// check for AIC I
+					let val = chain[0][2];
+					let tgts = findTargetsCorners(val, ep0, ep);
+					if (tgts.length > 0) {
+						let path = getCurrentPath(clix);
+						let aic = [val, ep0, ep, tgts, path];
+						let h = makeHint(aic);
+						console.log(aic);
+						console.log(chain);
+						return [h];
+					}
+				}
+			}
+		}
+	}
+
+	if (level > 25) {
+		console.log("Way too deep ********************", level);
+		console.log(chain[0]);
+		console.log(sc);
+		return [];
+	}
+
 	let nextstrong = (wsin === 'w');	// if incoming link is weak, the next link must be strong
 	// console.log("thislink", ep, clix, nextstrong, curlink)
 	// if (ep === 8) {
@@ -68,63 +203,77 @@ function nextLink(clix) {
 	// }
 
 	if (nextstrong) {
-		// if the next link must be strong it must be to a cp with a common endpoint and value (or to the other candidate of a bv)
-		let ccp = findCommonConjugatePairs(ep, [epval]);
+		// if the next link must be strong it must be to a cp with a common endpoint and value
+		let ccp = findCommonConjugatePairs(ep, epval);
 		for (const cp of ccp) {
 			//console.log("strong ccp", ccp);
 			// cp: value, cep1, cpa, cpb]
-			let cep0 = cp[2][0];
-			let cac0 = cp[2][1];
+			let cep = cp[1];
+			let cac = cp[2][1];
 			let lnkval = cp[0];
-			if (!endpointInPath(cep0, clix)) {
+			if (!endpointInPath(cep, clix)) {
 				// only one link since the previous link has an endpoint in common
+				if (alreadyLinked(clix, cep, lnkval, 's')) continue;
+
 				let nl = chain.length;
-				let link = [cep0, cac0, lnkval, 0, 's', clix, []];
+				let link = [cep, cac, lnkval, 0, 's', clix, [], 1, level];
 				chain[clix][6].push(nl);
 				chain.push(link);
 				//console.log("pl1", link);
-				let result = nextLink(nl);
+				let result = nextLink(nl, level);
 				if (result.length > 0) return result;;
 			}
 		}
+
+		// or if the current cell is bivalue it can be to the other bivalue candidate
+		if (epac.length === 2) {
+			let lnkval = (epval === epac[0]) ? epac[1] : epac[0];
+			let nl = chain.length;
+			if (!alreadyLinked(clix, ep, lnkval, 's')) {
+				let link = [ep, epac, lnkval, epval, 's', clix, [], 2, level];
+				chain[clix][6].push(nl);
+				chain.push(link);
+				//console.log("pl1", link);
+				let result = nextLink(nl, level);
+				if (result.length > 0) return result;;
+			}
+		}
+
 	} else {
 		// if the incoming link is strong, the next link can be either weak or strong
 		// conjugate pairs or bivalue cells are valid next links for weak or strong
 
-		// look for links to common conjugate pairs which can be treaded as weak
-		let lac = epac.filter(ac => (ac !== epval && ac !== bvval));	// next link cannot include incoming value
-
-		//console.log("lac", lac);
-		let ccp = findCommonConjugatePairs(ep, lac);
+		let ccp = findCommonConjugatePairs(ep, epval);
 		//console.log("weak ccp", ep, lac, ccp);
 		// strong link to next endpoint
 		for (const cp of ccp) {
 			// cp: value, cep1, cpa, cpb]
-			let cep = cp[1];	// next endpoint
-			let cac = cp[2][1];
+			let cep0 = cp[2][0];
+			let cac0 = cp[2][1];
+			let cep1 = cp[3][0];
+			let cac1 = cp[3][1];
 			let lnkval = cp[0];
 			//console.log("ccp", ep, cep, lac, cp);
-			if (!endpointInPath(cep, clix)) {
+			if (!endpointsInPath(cep0, cep1, clix)) {
 				//console.log("ccp", ep, cep, lac, cp);
-				// the first link is to the alternate candidate in the same cell
+				// the next link is the other endpoint of the cp
+				if (alreadyLinked(clix, cep0, lnkval, 's')) continue;
+
 				let nl = chain.length;
 				chain[clix][6].push(nl);
-				let link = [ep, epac, lnkval, 0, 'w', clix, [nl+1]];
+				let link = [cep0, cac0, epval, 0, 'w', clix, [], 3, level];
 				chain.push(link);
 
-				// the next link is the other endpoint of the cp
-				link = [cep, cac, lnkval, 0, 's', nl, []];
+				link = [cep1, cac1, lnkval, 0, 's', nl, [], 5];
 				chain.push(link);
 
-				//console.log("pl2", clix, nl, link);
-				//console.log("pl2", chain[clix]);
-				let result = nextLink(nl);
+				let result = nextLink(nl+1, level);
 				if (result.length > 0) return result;;
 			}
 		}
 
 		// or we can look for a weak link to a strong link such as a cp or bv
-		let scp = findSeenConjugatePairsWithVals(ep, [epval] );
+		let scp = findSeenConjugatePairs(ep, [epval] );
 		//console.log("weak scp", ep, epval, scp);
 		//console.log("ccp", ccp);
 		// weak link to strong link
@@ -138,16 +287,18 @@ function nextLink(clix) {
 			if (!endpointsInPath(cep0, cep1, clix)) {
 				//console.log("scp", ep, cep0, cep1, lac, cp);
 				// adding two links for the pair
+				if (alreadyLinked(clix, cep0, epval, 'w')) continue;
+
 				let nl = chain.length;
-				let link = [cep0, cac0, epval, 0, 'w', clix, [nl+1]];
+				let link = [cep0, cac0, epval, 0, 'w', clix, [nl+1], 4, level];
 				chain[clix][6].push(nl);
 				chain.push(link);
 				//console.log("pl3a", link);
 
-				link = [cep1, cac1, lnkval, 0, 's', nl, []];
+				link = [cep1, cac1, lnkval, 0, 's', nl, [], 5, level];
 				chain.push(link);
 				//console.log("pl3b", link);
-				let result = nextLink(nl);
+				let result = nextLink(nl+1, level);
 				if (result.length > 0) return result;;
 			}
 		}
@@ -162,18 +313,21 @@ function nextLink(clix) {
 				let val = bv[0];
 				let bac = bv[2];
 				let lnkval = (bac[0] === val) ? bac[1] : bac[0];	// get other candidate
+				let altval = (bac[0] === epval) ? bac[1] : bac[0];
+				if (alreadyLinked(clix, bep, val, 'w')) continue;
+
 				// create an incoming weak link to a strong link
 				let nl = chain.length;
-				let link = [bep, bac, val, epval, 'w', clix, [nl+1]];
+				let link = [bep, bac, val, epval, 'w', clix, [nl+1], 6, level];
 				chain[clix][6].push(nl);
 				chain.push(link);
 				//console.log("pl3a", link);
 
-				link = [bep, bac, lnkval, val, 's', nl, []];
+				link = [bep, bac, lnkval, altval, 's', nl, [], 7, level];
 				chain.push(link);
 				//console.log("pl3b", link);
 
-				let result = nextLink(nl);
+				let result = nextLink(nl+1, level);
 				if (result.length > 0) return result;;
 			}
 		}
@@ -234,7 +388,7 @@ export function loops() {
 	let  loops = [];
 	cpairs = getConjugatePairs();
 	//cpairs: [ value, [cix0, [ac0]], [cix1, [ac1]] ]
-	console.log("cpairs", cpairs);
+	//console.log("cpairs", cpairs);
 
 	bivals = getBivaluePairs();
 	//console.log("bivals", bivals);
@@ -249,90 +403,74 @@ export function loops() {
 		// make the first link
 		//console.log("bv0start", bp);
 		chain = [];	// reset the chain
+		maxlevel = 0;
 		let link = [bvep, bvac,  bvac[0], 0, 'x', -1, [1]];
 		chain.push(link);
 		link = [bvep, bvac,  bvac[1], bvac[0], 's', 0, []];
 		chain.push(link);
-		//loops = nextLink(1);
-		console.log("bchain0", chain.length);
-
-		//let pathsa = getAICPaths(chain);
-		//allpaths.push.apply(allpaths, pathsa);
-		//console.log("pathsa", bvep, bvac[0], pathsa.length);
-		//console.log("bv0end", pathsa.length);
-		//loops = processPaths(pathsa);
-		if (loops.length > 0) return loops;
+		loops = nextLink(1, 0);
+		if (loops.length > 0) {
+			console.log("bchain0", chain.length, maxlevel);
+			return loops;
+		}
 
 		// make the alternate link
 		//console.log("bv1start", bp);
 		chain = [];	// reset the chain
+		maxlevel = 0;
 		link = [bvep, bvac,  bvac[1], 0, 'x', -1, [1]];
 		chain.push(link);
 		link = [bvep, bvac,  bvac[0], bvac[1], 's', 0, []];
 		chain.push(link);
-		//loops = nextLink(1);
-		console.log("bchain1", chain.length);
-
-		//let pathsb = getAICPaths(chain);
-		//allpaths.push.apply(allpaths, pathsb);
-		//console.log("pathsb", bvep, bvac[1], pathsb.length);
-		//console.log("bv1end", pathsb.length);
-
-		//loops = processPaths(pathsb);
-		if (loops.length > 0) return loops;
+		loops = nextLink(1, 0);
+		if (loops.length > 0) {
+			console.log("bchain1", chain.length, maxlevel);
+			return loops;
+		}
 	}
 
 	// we need to start with a strong link so we might as well use a cp
 	// for each conjugate pair start the chains with their endpoints
 	let cvplen = cpairs.length;
 	for (let cv=0; cv<cvplen; ++cv) {
-		if (cv !== 29) continue;	// TEST
 		let cp = cpairs[cv];
 		//console.log("cp", cp);
 		// pick a starting endpoint
 
 		let valstart = cp[0];  // starting value for which there is only one in a conjugate pair
-		//if (valstart !== 5) continue;	// TEST
 		let sep0 = cp[1][0];
 		let sac0 = cp[1][1]
 		let sep1 = cp[2][0];
 		let sac1 = cp[2][1];
 
-		//if (sep0 !== 75 && sep1 !== 75) continue;	// TEST
-		//if (sep1 !== 75) continue;	// TEST
 		// make the first link
-		//console.log("cp0start", cp);
 		chain = [];	// reset the chain
+		maxlevel = 0;
 		let link = [sep0, sac0,  valstart, 0, 'x', -1, [1]];
 		chain.push(link);
 		link = [sep1, sac1,  valstart, 0, 's', 0, []];
 		chain.push(link);
-		loops = nextLink(1);
-		console.log("chain0", cv, chain.length);
-
-		//let pathsa = getAICPaths(chain);
-		//allpaths.push.apply(allpaths, pathsa);
-		//console.log("pathsa", sep0, pathsa.length);
-		//console.log("cp0end", pathsa.length);
-		//loops = processPaths(pathsa);
-		if (loops.length > 0) return loops;
+		loops = nextLink(1, 0);
+		if (loops.length > 0) {
+			console.log("chain0", cv, chain.length, maxlevel);
+			return loops;
+		}
+		//console.log(chain);
 
 		// make the alternate link
 		//console.log("cp1start", cp);
 		chain = [];	// reset the chain
+		maxlevel = 0;
 		link = [sep1, sac1,  valstart, 0, 'x', -1, [1]];
 		chain.push(link);
 		link = [sep0, sac0,  valstart, 0, 's', 0, []];
 		chain.push(link);
-		loops = nextLink(1);
-		console.log("chain1", cv, chain.length);
-
-		//let pathsb = getAICPaths(chain);
-		//allpaths.push.apply(allpaths, pathsb);
-		//console.log("pathsb", sep1, pathsb.length);
-		//console.log("cp1end", pathsb.length);
-		//loops = processPaths(pathsb);
-		if (loops.length > 0) return loops;
+		loops = nextLink(1, 0);
+		if (loops.length > 0) {
+			console.log("chain1", cv, chain.length, maxlevel);
+			return loops;
+		}
+		//console.log(chain);
 	}
 
 	return null
@@ -379,6 +517,8 @@ function findTargetsCorners(val, c0, c1) {
 	let rcs1 = RCS[c1];
 	let t0 = Rows[rcs0[0]][rcs1[1]];
 	let t1 = Rows[rcs1[0]][rcs0[1]];
+	if (t0 === c0 || t0 === c1 || t1 === c0 || t1 === c1) return [];
+
 	if (cellHasCandidate(t0, val)) tgts.push(t0);
 	if (cellHasCandidate(t1, val)) tgts.push(t1);
 	return tgts;
@@ -476,24 +616,24 @@ function findAIC_I_Loop(path) {
 function processPaths(paths) {
 	let loophints = [];
 	let hints = [];
-	for (let ap=0; ap<paths.length; ++ap) {
-		let p = paths[ap]
-		//console.log("patha", p);
-
-		let aic1loop = findAIC_I_Loop(p);
-		if (aic1loop) {
-			//console.log("ppaic1Loop", ap, aic1loop);
-			loophints.push(makeLoopHint(aic1loop[0]));
-			return loophints;
-		}
-
-		let aic2 = findAIC_II(p);
-		if (aic2) {
-			//console.log("ppaic2", ap, aic2);
-			hints.push(makeHint2(aic2[0]));
-			return hints;
-		}
-	}
+	// for (let ap=0; ap<paths.length; ++ap) {
+	// 	let p = paths[ap]
+	// 	//console.log("patha", p);
+ //
+	// 	let aic1loop = findAIC_I_Loop(p);
+	// 	if (aic1loop) {
+	// 		//console.log("ppaic1Loop", ap, aic1loop);
+	// 		loophints.push(makeLoopHint(aic1loop[0]));
+	// 		return loophints;
+	// 	}
+ //
+	// 	let aic2 = findAIC_II(p);
+	// 	if (aic2) {
+	// 		//console.log("ppaic2", ap, aic2);
+	// 		hints.push(makeHint2(aic2[0]));
+	// 		return hints;
+	// 	}
+	// }
 
 	// we don't need long paths any more so save the shortest
 	//let spaths = filterShortest(paths);
@@ -505,11 +645,11 @@ function processPaths(paths) {
 		//console.log("pathb", p);
 		let aic1 = findAIC_I(p);
 		if (aic1) {
-			//console.log("ppaic1", ap, aic1);
+			console.log("ppaic1", ap, aic1, p);
+			console.log(chain);
 			hints.push(makeHint(aic1[0]));
 			return hints;
 		}
-
 	}
 
 	//console.log("loophints", loophints);
@@ -555,22 +695,27 @@ function makeHint(aic) {
 		parity2: parity2,
 		values: [val],
 		targets: tgts,
+		targetlist: null,
+		targetcells: null,
 		msg: `AIC I: Cells: ${tgts}, Value: ${val}`
 	}
 
 	return h;
 }
 
-function makeHint2(aic) {
-	// aic: sval, sep, epi, tgts, apath
-	console.log("aic2", aic);
-	let ep0 = aic[1];
-	let ep1 = aic[2];
-	let tgtslist = aic[3];
+function makeHint2(aic2) {
+	// aic2: startval, epval, startep, ep, tgts, path
+	console.log("aic2", aic2);
+	let val0 = aic2[0];
+	let val1 = aic2[1];
+	let ep0 = aic2[2];
+	let ep1 = aic2[3];
+	let targets = aic2[4];
+	let path = aic2[5];
 
 	// collect the alternating link cells and the full path
 	let fullset = new Set();
-	aic[4].forEach(p => fullset.add(p[0]));
+	path.forEach(p => fullset.add(p[0]));
 	let fullpath = Array.from(fullset);;
 	let parity1 = [];
 	let parity2 = [];
@@ -585,14 +730,14 @@ function makeHint2(aic) {
 	})
 
 	// get a list of the target cells
+	let tgtslist = [];
 	let tgts = [];
-	tgtslist.forEach(t => tgts.push(...t[0]));
-	tgts.sort();
-
-	let valset = new Set();
-	tgtslist.forEach(t => t[1].forEach(valset.add, valset));
-	let values = Array.from(valset);
-	values.sort();
+	let values = [];
+	targets.forEach(t => {
+		tgtslist.push([[t[0]],[t[1]]]);
+		tgts.push(t[0]);
+		values.push(t[1]);
+	})
 
 	let h = {
 		type: 'aicII',
@@ -605,6 +750,7 @@ function makeHint2(aic) {
 		values: values,
 		targets: tgts,
 		targetlist: tgtslist,
+		targetcells: null,
 		msg: `AIC II: Cells: ${tgts}, Value: ${values}`
 	}
 
@@ -612,14 +758,16 @@ function makeHint2(aic) {
 }
 
 function makeLoopHint(aic) {
-	// aic: sval, sep, epi, tgts, apath
-	let ep0 = aic[1];
-	let ep1 = aic[2];
-	let tgtslist = aic[3];
+	// aic: startval, epval, startep, ep, tgts, path];
+	console.log("aic1l", aic);
+	let ep0 = aic[0];
+	let ep1 = aic[1];
+	let tgtslist = aic[4];
+	let path = aic[5];
 
 	// collect the alternating link cells and the full path
 	let fullset = new Set();
-	aic[4].forEach(p => fullset.add(p[0]));
+	path.forEach(p => fullset.add(p[0]));
 	let fullpath = Array.from(fullset);;
 	let parity1 = [];
 	let parity2 = [];
@@ -651,9 +799,10 @@ function makeLoopHint(aic) {
 		cells: [ep0, ep1],
 		parity1: parity1,
 		parity2: parity2,
-		values: values,
-		targets: tgts,
 		targetlist: tgtslist,
+		targetcells: null,
+		targets: tgts,
+		values: values,
 		msg: `AIC I Loop: Cells: ${tgts}, Value: ${values}`
 	}
 

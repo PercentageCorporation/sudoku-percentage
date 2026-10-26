@@ -1,4 +1,4 @@
-import { cellStore } from "@sudoku/common/store/store";
+import { cellStore, useManCellsStore } from "@sudoku/common/store/store";
 import { useHintStore } from "@sudoku/common/store/hintStore";
 import {Rows, Cols, Squares, cellRow, cellCol, cellSquare, RCS} from '@sudoku/common/utilities/constants';
 import { singletons, singleCounts } from "./singles";
@@ -22,11 +22,17 @@ export var hintcells = [];
 export var hintcandidates = [];
 
 export function initHintCells() {
-	if (hintcells.length === 81 && hintcandidates.length === 81) return;
 	let storecells = cellStore.getState().cells;
 	hintcells = Array(81).fill(0);
 	hintcandidates = Array.from({ length: 81 }, () => []);
 	storecells.forEach((c, ix) => {c.value > 0 ? hintcells[ix] = c.value : hintcandidates[ix] = [...c.activecandidates]});
+}
+
+export function initManHintCells() {
+	let storecells = useManCellsStore.getState().cells;
+	let storecandidates = useManCellsStore.getState().candidates;
+	hintcells = structuredClone(storecells);
+	hintcandidates = structuredClone(storecandidates);
 }
 
 const hintStats = {
@@ -121,6 +127,18 @@ export function resetHintStats() {
 
 }
 
+export function runManHints() {
+
+	initManHintCells();
+	initCounts();
+	//console.log("hints.js", cells.length)
+
+	let hint;
+	hint = tryHint("loops", loops);
+	return hint;
+
+}
+
 export function runHints() {
 	const gameComplete = cellStore.getState().gameComplete;
 	if (gameComplete) return null;
@@ -131,7 +149,7 @@ export function runHints() {
 	//console.log("hints.js", cells.length)
 
 	let hint;
-	if (hint = tryHint("forcingBV", biforce)) return hint;
+	if (hint = tryHint("loops", loops)) return hint;
 
 	if (hint = tryHint("singletons", singletons)) return hint;
 	if (hint = tryHint("singleCounts", singleCounts)) return hint;
@@ -156,7 +174,7 @@ export function runHints() {
 	if (hint = tryHint("colors", colors)) return hint;
 	if (hint = tryHint("colorWing", colorWing)) return hint;
 	if (hint = tryHint("als", als)) return hint;
-	//if (hint = tryHint("loops", loops)) return hint;
+	if (hint = tryHint("loops", loops)) return hint;
 	if (hint = tryHint("forcing", forcingChains)) return hint;
 	if (hint = tryHint("forcingBV", biforce)) return hint;
 

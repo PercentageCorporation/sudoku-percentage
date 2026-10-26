@@ -11,6 +11,8 @@ import LoadGameModal from "./LoadGameModal";
 import SaveGameModal from "./SaveGameModal";
 import ConfirmModal from "./ConfirmModal";
 import SeedGameModal from "./SeedGameModal";
+import { importSudokuFixtureMan } from "../utilities/exportBoard";
+import { runManHints } from "../hints/hints";
 
 function ManualCandidates({ix}) {
 	const { getManSelectedCell, getManCellCandidates } = useManCellsStore();
@@ -309,6 +311,10 @@ export default function ManualGrid() {
 		}, 0);
 	}
 
+	function handleImportGames(e) {
+		e.preventDefault();
+	}
+
 	function handleAddSolution(e) {
 		e.preventDefault();
 		setAddSolution(true);
@@ -352,6 +358,19 @@ export default function ManualGrid() {
 		let json = getManJSON();
 		console.log(json);
 	}
+
+	function handleLoadJSON(e) {
+		e.preventDefault();
+		importSudokuFixtureMan();
+	}
+
+	function handleRunHint(e) {
+		let h = runManHints();
+		console.log("manHints", h);
+		e.preventDefault();
+	}
+
+
 
 	function addSolutionCancel() {
 		setAddSolution(false);
@@ -478,8 +497,8 @@ export default function ManualGrid() {
 					&nbsp;
 				</div>
 			</div>
-			<div className="mt-4 text-xs font-normal">
-				<div className="mx-2 flex flex-row justify-between mt-2">
+			<div className="mt-4 mx-2 text-xs font-normal">
+				<div className="flex flex-row justify-between mt-2">
 					<button
 						type="button"
 						tabIndex={-1}
@@ -505,7 +524,7 @@ export default function ManualGrid() {
 						Return to Game
 					</button>
 				</div>
-				<div className="mx-2 flex flex-row justify-between mt-2">
+				<div className="flex flex-row justify-between mt-2">
 					<button
 						type="button"
 						tabIndex={-1}
@@ -531,7 +550,7 @@ export default function ManualGrid() {
 						Read Game
 					</button>
 				</div>
-				<div className="mx-2 flex flex-row justify-between mt-2">
+				<div className="flex flex-row justify-between mt-2">
 					<button
 						type="button"
 						tabIndex={-1}
@@ -557,7 +576,7 @@ export default function ManualGrid() {
 						Delete Game
 					</button>
 				</div>
-				<div className="mx-2 flex flex-row justify-between mt-2">
+				<div className="flex flex-row justify-between mt-2">
 					<button
 						type="button"
 						tabIndex={-1}
@@ -569,13 +588,13 @@ export default function ManualGrid() {
 					<button
 						type="button"
 						tabIndex={-1}
-						onClick={(e) => handleImportGame(e)}
+						onClick={(e) => handleImportGames(e)}
 						className="px-2 py-2 bg-blue-300 rounded hover:cursor-pointer"
 						>
 						Import Games
 					</button>
 				</div>
-				<div className="mx-2 flex flex-row justify-between mt-2">
+				<div className="flex flex-row justify-between mt-2">
 					<button
 						type="button"
 						tabIndex={-1}
@@ -601,7 +620,7 @@ export default function ManualGrid() {
 						Show Linear
 					</button>
 				</div>
-				<div className="mx-2 flex flex-row justify-between mt-2">
+				<div className="flex flex-row justify-between mt-2">
 					<button
 						type="button"
 						tabIndex={-1}
@@ -617,6 +636,23 @@ export default function ManualGrid() {
 						className="px-2 py-2 bg-blue-300 rounded hover:cursor-pointer"
 						>
 						Check Solution
+					</button>
+				</div>
+				<div className="flex flex-row justify-between mt-2">
+					<button
+						type="button"
+						onClick={(e) => handleLoadJSON(e)}
+						className="px-2 py-2 bg-blue-300 rounded hover:cursor-pointer"
+					>
+						Load JSON
+					</button>
+					<button
+						type="button"
+						tabIndex={-1}
+						onClick={(e) => handleRunHint(e)}
+						className="px-2 py-2 bg-blue-300 rounded hover:cursor-pointer"
+						>
+						Run Hint
 					</button>
 				</div>
 			</div>

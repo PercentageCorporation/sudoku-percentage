@@ -1,7 +1,7 @@
 /** Export a reproducible board snapshot from the current Zustand cellStore.
  * Import this module from your web app, then call downloadSudokuFixture().
  */
-import { cellStore, useCellActions } from '@sudoku/common/store/store';
+import { cellStore, useManCellsStore } from '@sudoku/common/store/store';
 
 export function captureSudokuFixture(name = 'board-state') {
   const cells = cellStore.getState().cells;
@@ -59,6 +59,31 @@ export function importSudokuFixture() {
 			let json = JSON.parse(game);
 			console.log(json);
 			loadGameJSON(json);
+			//navigate("/manual");
+		}
+	}
+	input.click();
+}
+
+export function importSudokuFixtureMan() {
+	const loadManGameJSON = useManCellsStore.getState().loadManGameJSON;
+	let input = document.createElement('input');
+	input.type = 'file';
+	input.onchange = e => {
+		// getting a hold of the file reference
+		let filename = e.target.value.split('\\').pop().split('/').pop().split('.')[0];
+		console.log("filename:", filename);
+		let file = e.target.files[0];
+		// setting up the reader
+		let reader = new FileReader();
+		reader.readAsText(file,'UTF-8');
+		// here we tell the reader what to do when it's done reading...
+		reader.onload = readerEvent => {
+			let game = readerEvent.target.result; // this is the content!
+
+			let json = JSON.parse(game);
+			console.log(json);
+			loadManGameJSON(json);
 			//navigate("/manual");
 		}
 	}

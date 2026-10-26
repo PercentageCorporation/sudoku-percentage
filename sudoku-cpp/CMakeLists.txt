@@ -138,3 +138,8 @@ add_executable(sudoku_json_interface_tests tests/json_interface_tests.cpp)
 target_link_libraries(sudoku_json_interface_tests PRIVATE sudoku_engine)
 add_test(NAME sudoku_json_interface_tests COMMAND sudoku_json_interface_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/forced2.json)
+
+add_executable(sudoku_technique_dispatch_tests tests/technique_dispatch_tests.cpp)
+target_link_libraries(sudoku_technique_dispatch_tests PRIVATE sudoku_engine)
+add_test(NAME sudoku_technique_dispatch_tests COMMAND sudoku_technique_dispatch_tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/forced2.json)

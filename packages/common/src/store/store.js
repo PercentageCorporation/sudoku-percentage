@@ -56,6 +56,17 @@ export const useManCellsStore = create (
 				})
 			},
 
+			loadManGameJSON: (json) => {
+				set({
+					cells: json.values,
+					candidates: json.candidates,
+					description: json.name,
+					manSelectedCell: -1,
+					manGameValid: validateManBoard(json.values, json.candidates),
+					initialized: true
+				})
+			},
+
 			validateManGame: () => {
 				const cls = get().cells
 				const candidates = get().candidates;

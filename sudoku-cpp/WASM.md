@@ -46,3 +46,30 @@ computationally expensive; a Web Worker is recommended if searches block the UI.
 
 Note: the current C++ Biforce result is not yet fully reconciled with the
 JavaScript implementation. The bridge does not alter that algorithm.
+
+## Call an individual technique
+
+The second argument to `getSudokuHint(boardJson, techniqueName)` can be `next`
+(the normal priority sequence) or any of these exact names:
+
+`singletons`, `singleCounts`, `lockedCandidates1`, `lockedCandidates2`,
+`nakedPairs`, `nakedTriples`, `hiddenPairs`, `hiddenTriples`,
+`uniqueRectangles`, `emptyRectangles`, `xWing`, `swordfish`, `xyWing`,
+`xyzWing`, `wWing`, `wxyzWing`, `xChain`, `xyChain`, `colors`, `colorWing`,
+`suedecoq`, `aic`, `forcing`, `forcingChains`, `biforce`.
+
+`forcing` is an alias for `forcingChains`. A known technique returning no
+hint produces the JSON string `null`. Unknown names throw an exception.
+
+```javascript
+const hint = JSON.parse(sudoku.getSudokuHint(JSON.stringify(board), 'xyWing'));
+// Use 'next' for normal operation.
+```
+
+After updating the C++ source, rebuild with:
+
+```sh
+cmake --build build-wasm --target sudoku_wasm -j
+```
+
+Then deploy the rebuilt `sudoku.js` and `sudoku.wasm` together.

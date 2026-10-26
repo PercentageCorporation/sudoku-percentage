@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { cellStore, useCellActions, useGameStateStore } from "@sudoku/common/store/store";
 import { useHintStore } from "@sudoku/common/store/hintStore";
+import { doHints } from "@sudoku/common/hints/bothhints";
 import { validateMove, formatSolution } from "@sudoku/common/utilities/utilities";
-import { runHints, showHintStats  } from '@sudoku/common/hints/hints';
-import { getCppHint } from '@sudoku/common/hints/cpphints';
 
 export default function PlayMenu() {
 	const { selectedValue, selectedCell, setSelectedValue, clearSelectedValue, clearSelectedCell, numbersUsed, setShowBivalue, setShowConjugates, resetState } = useGameStateStore();
@@ -11,7 +10,7 @@ export default function PlayMenu() {
 	const { setCellValue, clearCellValue, validateGame } = useCellActions();
 	const { checkGameSolved, calcNumbersUsed } = useCellActions();
 	const { updateCandidates, addNonCandidate } = useCellActions();
-	const { gameComplete, gameId } = cellStore();
+	const { gameComplete, gameValid,  gameId } = cellStore();
 
 	const { hint, getHint, setHint, setHintMsg, resetHint } = useHintStore();
 	const [message, setMessage] = useState(gameComplete ? "Game Complete" : null);
@@ -36,7 +35,7 @@ export default function PlayMenu() {
 			} else
 				setMessage(null);
 		}
-	},[gameComplete])
+	},[gameComplete, gameValid])
 
 	const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -44,15 +43,16 @@ export default function PlayMenu() {
 		e.preventDefault();
 		console.log("doAllHints");
 		setHintMsg("Starting");
-		let h = getCppHint();
+		let h = doHints();
 		//let h = runHints();
-		while (h !== null) {
+		while (h !== null && gameValid) {
 			setHintMsg(h.msg);
 			setHint(h);
 			processHint(h);
+			if (!validateGame()) break;
 			await delay(200);
 			//h = runHints();
-			h = getCppHint();
+			h = doHints();
 		}
 	}
 
@@ -112,7 +112,7 @@ export default function PlayMenu() {
 			let solved = checkGameSolved();
 			if (solved === 0) {
 				//let h = runHints();
-				let h = getCppHint();
+				let h = doHints();
 				if (h) {
 					console.log("hint:", h, h.msg);
 					setHintMsg(h.msg);
@@ -134,13 +134,17 @@ export default function PlayMenu() {
 	function showHint(e) {
 		e.preventDefault();
 		console.log("showHint", hint, gameComplete);
+		if (!gameValid) {
+			setHintMsg("Invalid Board");
+			return;
+		}
 		if (gameComplete) {
 			setHintMsg("Game Over");
 			return;
 		}
 		resetState();
 		//var h = runHints();
-		let h = getCppHint();
+		let h = doHints();
 		if (!h) {
 			//resetHint();
 			console.log("No Hints");
@@ -248,8 +252,8 @@ export default function PlayMenu() {
 
 	function handleCopyStatistics(e) {
 		e.preventDefault();
-		let hintStats = showHintStats();
-		navigator.clipboard.writeText(JSON.stringify(hintStats, null, 2));
+		//let hintStats = showHintStats();
+		//navigator.clipboard.writeText(JSON.stringify(hintStats, null, 2));
 	}
 	//if (!used.current) return <Spinner />;
 	//console.log("used:", numbersUsed)
@@ -317,7 +321,7 @@ export default function PlayMenu() {
 					{message}
 				</div>
 				<div>
-				{gameComplete &&
+				{gameComplete !== 0 && !gameValid &&
 					<div>
 						<button
 							type="button"
