@@ -48,20 +48,13 @@ std::string getNextSudokuHint(const std::string& boardJson) {
 }
 std::string getHintStats() { return statisticsEngine.statistics().toJson(); }
 void resetHintStats() { statisticsEngine.resetStatistics(); }
-
 std::string getSudokuHint(const std::string& boardJson, const std::string& name) {
-	auto fixture = sudoku::parseFixtureJson(boardJson);
-	if (!fixture.board.valid())
-		throw std::invalid_argument("Invalid Sudoku board");
-
-	if (name == "next")
-		return serialize(statisticsEngine.findNextHint(fixture.board));
-
-	return serialize(sudoku::findHintByName(fixture.board, name));
+    auto fixture = sudoku::parseFixtureJson(boardJson);
+    if (!fixture.board.valid()) throw std::invalid_argument("Invalid Sudoku board");
+    if (name == "next") return serialize(statisticsEngine.findNextHint(fixture.board));
+    return serialize(sudoku::findHintByName(fixture.board, name));
 }
-
 }
-
 EMSCRIPTEN_BINDINGS(sudoku_bridge) {
     emscripten::function("getSudokuHint", &getSudokuHint);
     emscripten::function("getNextSudokuHint", &getNextSudokuHint);

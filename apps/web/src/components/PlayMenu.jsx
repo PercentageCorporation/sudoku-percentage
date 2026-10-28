@@ -334,7 +334,7 @@ export default function PlayMenu() {
 					{message}
 				</div>
 				<div>
-					{(gameComplete === 0 || true) &&
+					{(gameComplete > 0) &&
 					<div>
 						<button
 							type="button"

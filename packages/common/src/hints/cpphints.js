@@ -31,10 +31,11 @@ export function getCppHint() {
 	const result = JSON.parse(jresult);
 	console.log("result", result);
 
-	//const stats = JSON.parse(sudoku.getHintStats());
+	const stats = JSON.parse(sudoku.getHintStats());
 	//console.table(stats.functions);
 	//console.table(stats.types);
-	//useHintStore.getState().setHintStats(stats.functions, stats.types);
+	useHintStore.getState().setHintStats(stats.functions, stats.types);
+
 	// getNextSudokuHint();
 	// getHintStats();
 	// resetHintStats();

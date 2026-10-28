@@ -14,6 +14,13 @@ int main() {
     const std::string json = stats.toJson();
     assert(json.find("\"successPct\":50") != std::string::npos);
     assert(json.find("\"type\":\"aicI\"") != std::string::npos);
+    assert(json.find("\"function\":\"loops\"") != std::string::npos);
+    assert(json.find("\"totalMs\":4") != std::string::npos);
+    assert(json.find("\"successMs\":1.5") != std::string::npos);
+    assert(json.find("\"failureMs\":2.5") != std::string::npos);
+    assert(json.find("\"avgMs\":2") != std::string::npos);
+    assert(json.find("\"maxMs\":2.5") != std::string::npos);
+    assert(json.find("\"count\":1") != std::string::npos);
     stats.reset();
     assert(stats.toJson() == "{\"functions\":[],\"types\":[]}");
 }

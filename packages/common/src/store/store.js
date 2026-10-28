@@ -655,9 +655,9 @@ export const cellStore = create(
 					})
 				},
 
-				// -1: still in progress
-				//  0: finished
-				//  1: finished, alternate solution
+				//  0: still in progress
+				//  1: finished
+				//  2: finished, alternate solution
 				checkGameSolved: () => {
 					//console.log("gameComplete");
 					const cells = get().cells;

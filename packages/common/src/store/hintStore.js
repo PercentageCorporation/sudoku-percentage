@@ -130,11 +130,25 @@ export const useHintStore = create(
 				});
 			},
 
-			setHintStats: (functions, types) => {
+			setHintStats: (functionRows, typeRows) => {
 				set({
 					hintStats: {
-						functions: functions,
-						types: types
+						functions: Object.fromEntries(
+							functionRows.map(f => [f.function, {
+								calls: f.calls,
+								successes: f.successes,
+								time: f.totalMs,
+								successTime: f.successMs,
+								failureTime: f.failureMs,
+								maxTime: f.maxMs
+							}])
+						),
+						types: Object.fromEntries(
+							typeRows.map(t => [t.type, {
+								count: t.count,
+								time: t.totalMs
+							}])
+						)
 					}
 				});
 			},

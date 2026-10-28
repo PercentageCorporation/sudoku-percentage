@@ -26,7 +26,7 @@ engine.resetStatistics();
 
 ## WebAssembly
 
-The existing `getSudokuHint(boardJson, techniqueName)` API is unchanged and **does not** update statistics. Three new exported methods share a persistent `HintEngine`:
+`getSudokuHint(boardJson, "next")` now uses the same persistent statistics-enabled engine as `getNextSudokuHint(boardJson)`. Other named-technique calls still bypass statistics. Three exported methods share that persistent `HintEngine`:
 
 - `getNextSudokuHint(boardJson)` – execute the full hint priority list and accumulate timings.
 - `getHintStats()` – return a JSON string of the accumulated statistics.
@@ -40,4 +40,6 @@ const stats = JSON.parse(module.getHintStats());
 module.resetHintStats();
 ```
 
-**Integration note:** If the React app still uses `getSudokuHint` to call techniques one at a time, it will not automatically collect C++ statistics. Switch the normal full-search call to `getNextSudokuHint`, or add a timed named-technique wrapper if you need to retain per-technique calls. Statistics are instance-local in native C++, and module-global for the WASM wrapper.
+**Integration note:** Both `getSudokuHint(boardJson, "next")` and `getNextSudokuHint(boardJson)` accumulate statistics. Named-technique calls do not. Statistics are instance-local in native C++, and module-global for the WASM wrapper.
+
+The JSON shape matches JavaScript `getHintStats()` exactly: arrays of function and type rows, with the same field names, sorting and rounding. To store C++ rows in the existing Zustand `hintStats` object, first convert the arrays back to keyed records (see `README-STATS-INTEGRATION.md`).
