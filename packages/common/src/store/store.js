@@ -222,6 +222,7 @@ export const useGameStateStore = create (
 					editCandidates: -1,
 					showBivalue: false,
 					showConjugates: false,
+					showSolution: false,
 					numbersUsed: [0,0,0,0,0,0,0,0,0,0],
 				})
 			},
@@ -257,7 +258,22 @@ export const useGameStateStore = create (
 			},
 
 			setShowBivalue: (tf) => {
-				set({ showBivalue: tf})
+				let sc = get().showConjugates;
+				if (tf) sc = false;
+				set({
+					showBivalue: tf,
+					showConjugates: sc
+				})
+			},
+
+			toggleShowBivalue: () => {
+				let sb = !get().showBivalue;
+				let sc = get().showConjugates;
+				if (sb) sc = false;
+				set({
+					showBivalue: sb,
+					showConjugates: sc
+				})
 			},
 
 			clearShowBivalue: () => {
@@ -265,7 +281,22 @@ export const useGameStateStore = create (
 			},
 
 			setShowConjugates: (tf) => {
-				set({ showConjugates: tf})
+				let sb = get().showBivalue;
+				if (tf) sb = false;
+				set({
+					showBivalue: sb,
+					showConjugates: tf
+				})
+			},
+
+			toggleShowConjugates: () => {
+				let sb = get().showBivalue;
+				let sc = !get().showConjugates;
+				if (sc) sb = false;
+				set({
+					showBivalue: sb,
+					showConjugates: sc
+				})
 			},
 
 			clearShowConjugates: () => {

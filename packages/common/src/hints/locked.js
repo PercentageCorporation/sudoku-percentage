@@ -1,7 +1,8 @@
 import { Rows, Cols, Squares, cellSquare, RCS } from '@sudoku/common/utilities/constants';
-import { findTargets } from './hints';
+import { formatTargetlist } from '@sudoku/common/utilities/utilities';
+import { findTargets, findTargetlist, findTargetsSeenByAll, findTargetsInHouses, separateTargetlist, addToTargetlist, packTargetlist } from './hints';
 import { hintcells, hintcandidates, vSqs, sameRow, sameCol } from './hints';
-import { canSeeEachOther, canAllSeeEachOther, findTargetsSeenByAll, findTargetsInHouses, getActiveCandidates, getValuesInCommon, includesAny } from './hints';
+import { canSeeEachOther, canAllSeeEachOther, getActiveCandidates, getValuesInCommon, includesAny } from './hints';
 
 
 //*****************************************************************************
@@ -16,7 +17,7 @@ import { canSeeEachOther, canAllSeeEachOther, findTargetsSeenByAll, findTargetsI
 // ax: [ [ac0], [ac1], ... ]
 // return a list of unique candidates from the ac lists
 function getUnique(ax) {
-	var s = new Set();
+	let s = new Set();
 	ax.forEach(a => a.forEach(s.add, s));
 	return Array.from(s);
 }
@@ -24,11 +25,11 @@ function getUnique(ax) {
 // return an array of cells with their candidates
 // and an array of all candidates in the house
 function getHouseCells(house) {
-	var hc = [];
-	var hac = new Set();
-	for (var i=0; i<9; ++i) {
-		var cix = house[i];
-		var ac = getActiveCandidates(cix);
+	let hc = [];
+	let hac = new Set();
+	for (let i=0; i<9; ++i) {
+		let cix = house[i];
+		let ac = getActiveCandidates(cix);
 		if (ac.length > 1) {
 			hc.push([cix, ac]);
 			ac.forEach(c => hac.add(c));
@@ -59,7 +60,7 @@ function getCommonHouses(cls) {
 // cls: [ [cix0, [ac0] ], [ cix1, [ac1] ], ... ]
 
 function candidateValueCells(val, cls0, cls1 ) {
-	var cls = [];
+	let cls = [];
 	cls0.forEach((c0) => {
 		if (c0[1].includes(val)) cls.push(c0[0]);
 	})
@@ -71,45 +72,45 @@ function candidateValueCells(val, cls0, cls1 ) {
 
 // find all ALS combinations
 function findALS(arr) {
-	var als = [];
-	var ghc = getHouseCells(arr);
-	var hc = ghc[0];		// cells in the house
-	var allac = ghc[1];		// all candidates in the thouse
+	let als = [];
+	let ghc = getHouseCells(arr);
+	let hc = ghc[0];		// cells in the house
+	let allac = ghc[1];		// all candidates in the thouse
 	//console.log("als", hc, allac);
-	var numc = hc.length;		// total cells in house
-	var numac = allac.length;	// total candidates in house
+	let numc = hc.length;		// total cells in house
+	let numac = allac.length;	// total candidates in house
 
 	// house cells hc: [ cix, [ac] ]
-	for (var i=0; i<numc; ++i) {
-		var hci = hc[i];
-		var cixi = hci[0];
-		for (var j=i+1; j<numc; ++j) {
-			var hcj = hc[j];
-			var cixj = hcj[0];
+	for (let i=0; i<numc; ++i) {
+		let hci = hc[i];
+		let cixi = hci[0];
+		for (let j=i+1; j<numc; ++j) {
+			let hcj = hc[j];
+			let cixj = hcj[0];
 			// for two cells how many candidates
-			var tc = getUnique([hci[1], hcj[1]]);
+			let tc = getUnique([hci[1], hcj[1]]);
 			if (tc.length === 3) {
 				//allIncluded([hci[1], hcj[1]]);
 				//console.log("als2", i, j, cixi, cixj, tc);
 				// two cells with three candidates
 				als.push([tc, [cixi, cixj], [hci, hcj]])
 			}
-			for (var k=j+1; k<numc; ++k) {
-				var hck = hc[k];
-				var cixk = hck[0];
+			for (let k=j+1; k<numc; ++k) {
+				let hck = hc[k];
+				let cixk = hck[0];
 				// for three cells how many candidates
-				var tc = getUnique([hci[1], hcj[1], hck[1]]);
+				let tc = getUnique([hci[1], hcj[1], hck[1]]);
 				if (tc.length === 4) {
 					//allIncluded([hci[1], hcj[1], hck[1]]);
 					//console.log("als3", i, j, cixi, cixj, tc);
 					// three cells with four candidates
 					als.push([tc, [cixi, cixj, cixk], [hci, hcj, hck]]);
 				}
-				for (var l=k+1; l<numc; ++l) {
-					var hcl = hc[l];
-					var cixl = hcl[0];
+				for (let l=k+1; l<numc; ++l) {
+					let hcl = hc[l];
+					let cixl = hcl[0];
 					// for four cells how many candidates
-					var tc = getUnique([hci[1], hcj[1], hck[1], hcl[1]]);
+					let tc = getUnique([hci[1], hcj[1], hck[1], hcl[1]]);
 					if (tc.length === 5) {
 						//allIncluded([hci[1], hcj[1], hck[1], hcl[1]]);
 						//console.log("als3", i, j, cixi, cixj, tc);
@@ -125,8 +126,8 @@ function findALS(arr) {
 
 // can any cell in one ALS see a cell in the other ALS
 function canSeeOtherALS(als0, als1) {
-	for (var i=0; i<als0.length; ++i) {
-		for (var j=0; j<als1.length; ++j) {
+	for (let i=0; i<als0.length; ++i) {
+		for (let j=0; j<als1.length; ++j) {
 			if (canSeeEachOther(als0[i], als1[j])) return true;
 		}
 	}
@@ -135,7 +136,7 @@ function canSeeOtherALS(als0, als1) {
 
 
 function findRestrictedCommonCandidates(comvals, als0, als1) {
-	var rcc = [];
+	let rcc = [];
 	for (let cv=0; cv<comvals.length; ++cv) {
 		// get the cells containing the value
 		let val = comvals[cv];
@@ -268,14 +269,15 @@ export function als() {
 					console.log("rcc2tgtsI", hi, uvi, tgtsi);
 					console.log("rcc2tgtsJ", hj, uvj, tgtsj);
 
-					let targetlist = [];
-					if (tgtsX) targetlist.push([tgtsX,[X]]);
-					if (tgtsZ) targetlist.push([tgtsZ,[Z]]);
-					if (tgtsi) targetlist.push([tgtsi,uvi]);
-					if (tgtsj) targetlist.push([tgtsj,uvj]);
-					let values = [];
-					let targets = [];
-					targetlist.forEach(t => {values.push(...t[1]); targets.push(...t[0])} )
+					let tl = [];
+					if (tgtsX) tgtsX.forEach(t => addToTargetlist(tl, t, X));
+					if (tgtsZ) tgtsZ.forEach(t => addToTargetlist(tl, t, Z));
+					if (tgtsi) tgtsi.forEach(t => uvi.forEach(u =>  addToTargetlist(tl, t, u)));
+					if (tgtsj) tgtsj.forEach(t => uvj.forEach(u =>  addToTargetlist(tl, t, u)));
+
+					let targetlist = packTargetlist(tl);
+					let {targets, values} = separateTargetlist(targetlist);
+					let msg = "ALS XZ 2: " + formatTargetlist(targetlist);
 
 					let h = {
 						type: 'alsXZ2',
@@ -288,7 +290,7 @@ export function als() {
 						values: values,
 						targets: targets,
 						targetlist: targetlist,
-						msg: `ALS XZ 2: Cells: ${targets}, Value: ${values}`
+						msg: msg
 					}
 					//console.log(h.msg);
 					alshints.push(h);
@@ -314,54 +316,63 @@ export function als() {
 
 export function lockedCandidates1() {
 
-	var lc = [];
-	for (var s=0; s<9; ++s) {
+	let lc = [];
+	for (let s=0; s<9; ++s) {
 		//if (s !== 2) continue;	// TEST
-		var square = Squares[s];
-		for (var v=1; v<10; ++v) {
-			var vcnt = vSqs[s][v];	// number of occurances of the value in the square
+		let square = Squares[s];
+		for (let v=1; v<10; ++v) {
+			let vcnt = vSqs[s][v];	// number of occurances of the value in the square
 			if (vcnt > 1 && vcnt < 4) {
 				// svc: rcs, value, square, row/col, count, cells
-				var cls = findTargets(square, [v], [])
-				var srow = sameRow(cls);
+				let cls = findTargets(square, [v], [])
+				let srow = sameRow(cls);
 				//console.log("vcnt", s, v, vcnt, cls, srow);
 				if (srow >= 0) {
-					var arr = Rows[srow];
-					var tgts = findTargets(arr, [v], square);
+					let arr = Rows[srow];
+					let tgts = findTargetlist(arr, [v], square);
 					//console.log("tgts", tgts);
-					if (tgts) lc.push(['r', srow, v, cls, tgts, s])
+					if (tgts) {
+						lc.push(['r', srow, v, cls, tgts, s])
+						break;
+					}
 				} else {
-					var scol = sameCol(cls);
+					let scol = sameCol(cls);
 					if (scol >= 0) {
-						var arr = Cols[scol];
-						var tgts = findTargets(arr, [v], square);
-						if (tgts) lc.push(['c', scol, v, cls, tgts, s])
+						let arr = Cols[scol];
+						let tgts = findTargetlist(arr, [v], square);
+						if (tgts) {
+							lc.push(['c', scol, v, cls, tgts, s])
+							break;
+						}
 					}
 				}
 			}
+			if (lc.length > 0) break;
 		}
 	}
 	//console.log("lc", lc);
 
-	var lchints = [];
+	let lchints = [];
 	for (const lh of lc) {
-		var rcs = lh[0];
-		var rcsix = lh[1];
-		var val = lh[2];
-		var cls = lh[3];
-		var tgts = lh[4];
-		var sq = lh[5];
-		//console.log(dir,trc0,cls)
+		let rcs = lh[0];
+		let rcsix = lh[1];
+		let val = lh[2];
+		let cls = lh[3];
+		let tgtlist = lh[4];
+		let sq = lh[5];
+		let {targets, values} = separateTargetlist(tgtlist);
+		let msg = "Locked 1: " + formatTargetlist(tgtlist);
 
-		var h = {
+		let h = {
 			type: 'locked1',
 			row: rcs === 'r' ? rcsix : null,
 			col: rcs === 'c' ? rcsix : null,
 			square: sq,
 			cells: cls,
-			values: [val],
-			targets: tgts,
-			msg: `Locked1: Cells: ${tgts}, Value: ${val}`
+			targetlist: tgtlist,
+			values: values,
+			targets: targets,
+			msg: msg
 		}
 		lchints.push(h);
 		break;
@@ -379,9 +390,9 @@ export function lockedCandidates1() {
 
 // find value that only occurs once in an array
 function hasSingleOccurance(arr) {
-	var single = null;
-	var singleCount = 0;
-	for (var i=0; i<arr.length; ++i) {
+	let single = null;
+	let singleCount = 0;
+	for (let i=0; i<arr.length; ++i) {
 		if (arr[i] > 0 ) {
 			if (single !== null) return null;
 			single = i;
@@ -394,10 +405,10 @@ function hasSingleOccurance(arr) {
 
 // get the cell numbers of all the cells in the square with the given value
 function getSquareValueCells(value, sqix) {
-	var svc = [];
-	var sq = Squares[sqix]; // get the square cells
-	for (var i=0; i<9; ++i) {
-		var cix = sq[i];	// cell index in square
+	let svc = [];
+	let sq = Squares[sqix]; // get the square cells
+	for (let i=0; i<9; ++i) {
+		let cix = sq[i];	// cell index in square
 		if (hintcells[cix] > 0) continue;
 		if (hintcandidates[cix].includes(value)) {
 			svc.push(cix);
@@ -411,19 +422,19 @@ export function lockedCandidates2() {
 	// find values in squares
 	const ppsHints = [];
 
-	for (var value=1; value<10; ++value) {
+	for (let value=1; value<10; ++value) {
 		// for each row, count the number of times a value appears in a square
-		for (var r=0; r<9; ++r) {
-			var row = Rows[r];
-			var sqCounts = [0,0,0,0,0,0,0,0,0];
-			var sqCells = [[],[],[],[],[],[],[],[],[]];
+		for (let r=0; r<9; ++r) {
+			let row = Rows[r];
+			let sqCounts = [0,0,0,0,0,0,0,0,0];
+			let sqCells = [[],[],[],[],[],[],[],[],[]];
 			// for each cell in the row
 			let valcount = 0;
-			for (var c=0; c<9; ++c) {
-				var cix = row[c];	// cell index in square
+			for (let c=0; c<9; ++c) {
+				let cix = row[c];	// cell index in square
 				if (hintcells[cix] > 0) continue;
 				if (hintcandidates[cix].includes(value)) {
-					var sq = cellSquare[cix];
+					let sq = cellSquare[cix];
 					sqCounts[sq]++;
 					sqCells[sq].push(cix);
 					++valcount;
@@ -431,27 +442,29 @@ export function lockedCandidates2() {
 			}
 			if (valcount === 0) continue;
 
-			var sqix = hasSingleOccurance(sqCounts);
+			let sqix = hasSingleOccurance(sqCounts);
 			// sqix only occurs in one square, therefore it is a candidate for a locked candidate
 			if (sqix !== null) {
-				var vc = sqCounts[sqix];	// number of times value occurs in the square in the row
-				var targets = getSquareValueCells(value, sqix);	// get the cells that the value is in
-				var vscount = targets.length;
+				let vc = sqCounts[sqix];	// number of times value occurs in the square in the row
+				//let targets = getSquareValueCells(value, sqix);	// get the cells that the value is in
+				let targetlist = findTargetlist(Squares[sqix], [value], []);	// get the cells that the value is in
+				let vscount = targetlist.length;
 				//console.log("sqix",value, r, sqix, vc, pcells, sqCounts);
 				if (vscount > vc) {
-					let cels = sqCells[sqix];
-					targets = targets.filter(c => !cels.includes(c));
-					//console.log("ppsr", value, r, sqix, vc, vscount, targets, sqCounts);
-					if (targets.length > 0) {
-						var msg = `Locked 2: Cells: ${cels}, Value: ${value}, Targets: ${targets}`;
-						var ppsh = {
+					//let cels = sqCells[sqix];
+					//targets = targets.filter(c => !cels.includes(c));
+					if (targetlist.length > 0) {
+						let {targets, values} = separateTargetlist(targetlist);
+						let msg = "Locked 2R: " + formatTargetlist(targetlist);
+						let ppsh = {
 							type: "locked2",
 							direction: "row",
 							row: r,
 							col: null,
 							square: sqix,
 							cells: cels,
-							values: [value],
+							targetlist: targetlist,
+							values: values,
 							targets: targets,
 							msg: msg
 						};
@@ -464,17 +477,17 @@ export function lockedCandidates2() {
 		}
 
 		// do it for the columns
-		for (var cx=0; cx<9; ++cx) {
-			var col = Cols[cx];
-			var sqCounts = [0,0,0,0,0,0,0,0,0];
-			var sqCells = [[],[],[],[],[],[],[],[],[]];
+		for (let cx=0; cx<9; ++cx) {
+			let col = Cols[cx];
+			let sqCounts = [0,0,0,0,0,0,0,0,0];
+			let sqCells = [[],[],[],[],[],[],[],[],[]];
 			// for each cell in the row
 			let valcount = 0;
-			for (var c=0; c<9; ++c) {
-				var cix = col[c];	// cell index in square
+			for (let c=0; c<9; ++c) {
+				let cix = col[c];	// cell index in square
 				if (hintcells[cix] > 0) continue;
 				if (hintcandidates[cix].includes(value)) {
-					var sq = cellSquare[cix];
+					let sq = cellSquare[cix];
 					sqCounts[sq]++;
 					sqCells[sq].push(cix);
 					++valcount;
@@ -482,27 +495,26 @@ export function lockedCandidates2() {
 			}
 			if (valcount === 0) continue;
 
-			var sqix = hasSingleOccurance(sqCounts);
+			let sqix = hasSingleOccurance(sqCounts);
 			//console.log(sqix, sqCounts);
 			if (sqix !== null) {
-				var vc = sqCounts[sqix];
-				var targets = getSquareValueCells(value, sqix);	// get the cells that the value is in
-				var vscount = targets.length;
-
+				let vc = sqCounts[sqix];
+				//let targets = getSquareValueCells(value, sqix);	// get the cells that the value is in
+				let targetlist = findTargetlist(Squares[sqix], [value], []);	// get the cells that the value is in
+				let vscount = targetlist.length;
 				if (vscount > vc) {
-					let cels = sqCells[sqix];
-					targets = targets.filter(c => !cels.includes(c));
 					//console.log("ppsc", value, cx, sqix, vc, vscount, targets, sqCounts);
-					if (targets.length > 0) {
-						var msg = `Locked 2: Cells: ${cels}, Value: ${value}, Targets: ${targets}`;
-						var ppsh = {
+					if (targetlist.length > 0) {
+						let {targets, values} = separateTargetlist(targetlist);
+						let msg = "Locked 2C: " + formatTargetlist(targetlist);
+						let ppsh = {
 							type: "locked2",
 							direction: "col",
 							row: null,
 							col: cx,
 							square: sqix,
 							cells: cels,
-							values: [value],
+							values: values,
 							targets: targets,
 							msg: msg
 						};

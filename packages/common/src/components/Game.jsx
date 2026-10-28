@@ -19,17 +19,17 @@ export default function Game() {
 	const { resetHint, useCPP, toggleUseCPP, setHintsRunning } = useHintStore();
 	const { setScreen } = useScreenStore();
 
-	console.log("Game", gameLoaded, difficulty, gameId);
+	//console.log("Game", gameLoaded, difficulty, gameId);
 	//console.log("saved", saved.length);
 
 	useEffect(() => {
-		console.log("Game UE");
+		//console.log("Game UE");
 		async function load_game() {
 			//const { game, solution, difficulty } = await getSudokuSoluitons();
 			const g = getSampleGame();
 			//const { game, solution, difficulty } = await getGameDosuku();
 			//console.log("game:", g.gameid, g.difficulty)
-			console.log(g.values, g.solution, g.description, g.gameid);
+			//console.log(g.values, g.solution, g.description, g.gameid);
 			initGame(g.values, g.solution, g.description, g.gameid);
 		}
 

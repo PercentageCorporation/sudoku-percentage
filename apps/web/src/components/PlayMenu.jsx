@@ -6,8 +6,8 @@ import { validateMove, formatSolution } from "@sudoku/common/utilities/utilities
 import { showHintStats } from "@sudoku/common/hints/hints";
 
 export default function PlayMenu() {
-	const { selectedValue, selectedCell, setSelectedValue, clearSelectedValue, clearSelectedCell, numbersUsed, setShowBivalue, setShowConjugates, resetState } = useGameStateStore();
-	const { addSolutionLog, solutionLog } = useGameStateStore();
+	const { selectedValue, selectedCell, setSelectedValue, clearSelectedValue, clearSelectedCell, numbersUsed, resetState } = useGameStateStore();
+	const { solutionLog, showBivalue, showConjugates, toggleShowConjugates,toggleShowBivalue } = useGameStateStore();
 	const { setCellValue, clearCellValue, validateGame } = useCellActions();
 	const { checkGameSolved, calcNumbersUsed } = useCellActions();
 	const { updateCandidates, addNonCandidate } = useCellActions();
@@ -17,10 +17,10 @@ export default function PlayMenu() {
 	const [message, setMessage] = useState(gameComplete ? "Game Complete" : null);
 
 	const selection = [1,2,3,4,5,6,7,8,9];
-	console.log("PlayMenu");
+	//console.log("PlayMenu");
 
 	useEffect(() => {
-		console.log("PlayMenu UE");
+		//console.log("PlayMenu UE");
 		calcNumbersUsed();
 		const valid = validateGame()
 		if (!valid) {
@@ -171,16 +171,14 @@ export default function PlayMenu() {
 		e.preventDefault();
 		console.log("bivalue", selectedValue);
 		setHintsRunning(false);
-		setShowConjugates(false);
-		setShowBivalue(true);
+		toggleShowBivalue(true);
 	}
 
 	function conjugates(e) {
 		e.preventDefault();
 		setHintsRunning(false);
 		console.log("conjugates", selectedValue);
-		setShowBivalue(false);
-		setShowConjugates(true);
+		toggleShowConjugates(true);
 		//navigate('/');
 	}
 
@@ -296,25 +294,25 @@ export default function PlayMenu() {
 				</div>
 			</div>
 			<div className="flex flex-row mt-4">
-				<div className="flex justify-center mr-4 size-8 text-xl font-bold rounded-md bg-green-400 hover:cursor-pointer "
+				<div className="flex justify-center mr-4 size-8 text-xl font-bold rounded-md bg-green-300 hover:cursor-pointer "
 					onClick={(e) => select(e,0)} >
 				C
 				</div>
-				<div className="flex justify-center mr-4 size-8 text-xl font-bold rounded-md bg-green-400 hover:cursor-pointer "
+				<div className={"flex justify-center mr-4 size-8 text-xl font-bold rounded-md hover:cursor-pointer" + `${showBivalue ? ' bg-green-400' : ' bg-green-300'}`}
 					onClick={(e) => bivalue(e)} >
 				BV
 				</div>
-				<div className="flex justify-center mr-4 size-8 text-xl font-bold rounded-md bg-green-400 hover:cursor-pointer "
+				<div className={"flex justify-center mr-4 size-8 text-xl font-bold rounded-md hover:cursor-pointer" + `${showConjugates ? ' bg-green-400' : ' bg-green-300'}`}
 					onClick={(e) => conjugates(e)} >
 				CP
 				</div>
 				<div
-					className="flex justify-center mr-4 size-8 text-xl font-bold rounded-md bg-green-400 hover:cursor-pointer "
+					className="flex justify-center mr-4 size-8 text-xl font-bold rounded-md bg-green-300 hover:cursor-pointer "
 					onClick={(e) => showHint(e)} >
 					?
 				</div>
 				<div
-					className="flex justify-center mr-4 size-8 text-xl font-bold rounded-md bg-green-400 hover:cursor-pointer "
+					className="flex justify-center mr-4 size-8 text-xl font-bold rounded-md bg-green-300 hover:cursor-pointer "
 					onClick={(e) => doAllHints(e)} >
 					&gt;&gt;
 				</div>
@@ -322,7 +320,7 @@ export default function PlayMenu() {
 			<div>
 				<div className="flex flex-row h-8 mt-4">
 					<div
-						className="px-2 flex items-center bg-green-300 rounded-md text-normal font-semibold hover:cursor-pointer"
+						className="px-2 w-full flex items-center bg-green-300 rounded-md text-normal font-semibold hover:cursor-pointer"
 						onClick={(e)=>doHint(e)}
 						>
 						{`${hint.msg ? hint.msg : gameComplete ? 'Game Over' : 'No Hint'}`}

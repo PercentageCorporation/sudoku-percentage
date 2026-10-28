@@ -1,5 +1,6 @@
 import { Rows, Cols, Squares } from '@sudoku/common/utilities/constants';
-import { hintcells, hintcandidates, findTargets, findInternalTargets, includesAll, includesAny } from './hints';
+import { hintcells, hintcandidates, findTargets, findTargetlist, findInternalTargetlist, separateTargetlist, includesAll, includesAny } from './hints';
+import { formatTargetlist } from '../utilities/utilities';
 
 
 //*****************************************************************************
@@ -170,8 +171,11 @@ function findNakedTriples(arr) {
 					if (vs.size > 3) continue;	// too many candidates
 
 					var vals = Array.from(vs).sort((a,b) => a-b);
-					var tgts = findTargets(arr, vals, cls);
-					if (tgts) triples.push([cls, vals, tgts]);
+					var tgts = findTargetlist(arr, vals, cls);
+					if (tgts) {
+						triples.push([cls, vals, tgts]);
+						return triples;
+					}
 				}
 			}
 		}
@@ -241,7 +245,7 @@ export function findHiddenTriple(ptIn) {
 				//console.log("valid3");
 				//console.log("hv", hc, hv, pt);
 				//console.log("tcc3", 0, 1, 2, pt[0][0], pt[1][0], pt[2][0], tcc, pt);
-				triples.push([pt[0][0], pt[1][0], pt[2][0]],tcc.values);
+				triples.push([pt[0][0], pt[1][0], pt[2][0]], tcc.values);
 				//console.log("3", pt);
 			}
 		}
@@ -275,7 +279,7 @@ export function findHiddenTriple(ptIn) {
 							//console.log("valid3p");
 							//console.log("tcc", i, j, k, pt[i][0], pt[j][0], pt[k][0], tcc, pt);
 							//triples.push([[pt[i], pt[j], pt[k]],tcc.values]);
-							triples.push([pt[i][0], pt[j][0], pt[k][0]],tcc.values);
+							triples.push([pt[i][0], pt[j][0], pt[k][0]], tcc.values);
 							//console.log("gt3", pt);
 						}
 					}
@@ -299,22 +303,33 @@ export function nakedTriples() {
 
 	for (var i=0; i<9; i++) {
 		var rt = findNakedTriples(Rows[i])
-		if (rt.length > 0) rt.forEach((t) => triples.push(['r', i].concat(t)));
+		if (rt.length > 0) {
+			rt.forEach((t) => triples.push(['r', i].concat(t)));
+			break;
+		}
 		var ct = findNakedTriples(Cols[i])
-		if (ct.length > 0) ct.forEach((t) => triples.push(['c', i].concat(t)));
+		if (ct.length > 0) {
+			ct.forEach((t) => triples.push(['c', i].concat(t)));
+			break;
+		}
 		var st = findNakedTriples(Squares[i])
-		if (st.length > 0) st.forEach((t) => triples.push(['s', i].concat(t)));
+		if (st.length > 0) {
+			st.forEach((t) => triples.push(['s', i].concat(t)));
+			break;
+		}
 	}
 
 	//console.log("np triples",triples)
+	// triple: rcs, rcsix, cls, vals, tgts
 	var nakedTriples = [];
 	triples.forEach((npt) => {
 		var rcs = npt[0];
 		var rcsix = npt[1];
 		var cls = npt[2];
 		var vals = npt[3];
-		var tgts = npt[4]
-		//console.log(dir,trc0,cls)
+		var tgtlist = npt[4]
+		let {targets, values} = separateTargetlist(tgtlist);
+		let msg = "Naked Triple: " + formatTargetlist(tgtlist);
 
 		var h = {
 			type: 'nakedTriple',
@@ -322,9 +337,10 @@ export function nakedTriples() {
 			col: rcs === 'c' ? rcsix : null,
 			square: rcs === 's' ? rcsix : null,
 			cells: cls,
-			values: vals,
-			targets: tgts,
-			msg: `Naked Triple: Cells: ${tgts}, Values: ${vals}`
+			targetlist: tgtlist,
+			values: values,
+			targets: targets,
+			msg: msg
 		}
 		nakedTriples.push(h);
 	})
@@ -374,19 +390,28 @@ export function hiddenTriples() {
 			//console.log("row",i);
 			ht = findHiddenTriple(vRowPT[i][1]);
 			//console.log("htrow", i, ht);
-			if (ht) rowC.push([vRowPT[i][0],ht[0],ht[1]]);
+			if (ht) {
+				rowC.push([vRowPT[i][0],ht[0],ht[1]]);
+				break;
+			}
 		}
 		if (vColPT.length > i && vColPT[i][1].length > 2) {
 			//console.log("col",i);
 			ht = findHiddenTriple(vColPT[i][1]);
 			//console.log("htcol", i, ht);
-			if (ht) colC.push([vColPT[i][0],ht[0],ht[1]]);
+			if (ht) {
+				colC.push([vColPT[i][0],ht[0],ht[1]]);
+				break;
+			}
 		}
 		if (vSqPT.length > i && vSqPT[i][1].length > 2) {
 			//console.log("sq",i);
 			ht = findHiddenTriple(vSqPT[i][1]);
 			//console.log("htsq", i, ht);
-			if (ht) sqC.push([vSqPT[i][0],ht[0],ht[1]]);
+			if (ht) {
+				sqC.push([vSqPT[i][0],ht[0],ht[1]]);
+				break;
+			}
 		}
 	}
 
@@ -399,13 +424,11 @@ export function hiddenTriples() {
 		var cls = [ row[rc[1][0]],row[rc[1][1]],row[rc[1][2]] ];
 		var vals = rc[2];
 		// if there are any external targets this is not a valid triple
-		var et = findTargets(row, vals, cls);
+		var et = findTargetlist(row, vals, cls);
 		if (!et) {
-			var tgtvals = findInternalTargets(cls, vals);
-			if (tgtvals) {
-				// have targets
-				//console.log("r",r,cls,tgtvals[1],tgtvals[0]);
-				targets.push(["r",r,cls,tgtvals[1],tgtvals[0]]);
+			var tgtlist = findInternalTargetlist(cls, vals);
+			if (tgtlist.length > 0) {
+				targets.push(["r",r,cls,tgtlist]);
 				break;
 			}
 		}
@@ -420,11 +443,9 @@ export function hiddenTriples() {
 			//console.log("cc", c, col, cls, vals);
 			var et = findTargets(col, vals, cls);
 			if (!et) {
-				var tgtvals = findInternalTargets(cls, vals);
-				if (tgtvals) {
-					// have targets
-					//console.log("c",c,cls,tgtvals[1],tgtvals[0]);
-					targets.push(["c",c,cls,tgtvals[1],tgtvals[0]]);
+				var tgtlist = findInternalTargetlist(cls, vals);
+				if (tgtlist.length > 0) {
+					targets.push(["c",c,cls,tgtlist]);
 					break;
 				}
 			}
@@ -438,11 +459,10 @@ export function hiddenTriples() {
 			var vals = sc[2];
 			var et = findTargets(sq, vals, cls);
 			if (!et) {
-				var tgtvals = findInternalTargets(cls, vals);
-				if (tgtvals) {
+				var tgtlist = findInternalTargetlist(cls, vals);
+				if (tgtlist.length > 0) {
 					// have targets
-					//console.log("s",s,cls,tgtvals[1],tgtvals[0]);
-					targets.push(["s",s,cls,tgtvals[1],tgtvals[0]]);
+					targets.push(["s",s,cls,tgtlist]);
 					break;
 				}
 			}
@@ -455,19 +475,19 @@ export function hiddenTriples() {
 		var dir = tgt[0];
 		var rcs = tgt[1];
 		var cls = tgt[2];
-		var vals = tgt[3];
-		var tgts = tgt[4]
-		//console.log(dir,trc0,cls)
-
+		var tgts = tgt[3];
+		let {targets, values} = separateTargetlist(tgts);
+		let msg = "Hidden Triple: " + formatTargetlist(tgts);
 		var h = {
 			type: 'hiddenTriple',
 			rows: rcs === 'r' ? rcs : null,
 			cols: rcs === 'c' ? rcs : null,
 			square: rcs === 's' ? rcs : null,
 			cells: cls,
-			values: vals,
-			targets: tgts,
-			msg: `Hidden Triple: Cells: ${tgts}, Values: ${vals}`
+			targetlist: tgts,
+			values: values,
+			targets: targets,
+			msg: msg
 		}
 		triples.push(h);
 		break;

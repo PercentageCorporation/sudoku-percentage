@@ -14,8 +14,8 @@ function Candidates({ix}) {
 
 	let bg = (ac.includes(selectedValue)) ? " bg-green-100" : "";
 	if (showConjugates)  {
-		//let cicp = cellInConjugatePair(ix,selectedValue);
-		//if (cicp > 0 ) bg = (cicp === 1) ? " bg-yellow-200" : " bg-yellow-400";
+		let cicp = cellInConjugatePair(ix,selectedValue);
+		if (cicp > 0 ) bg = (cicp === 1) ? " bg-yellow-200" : " bg-yellow-400";
 	} else if (showBivalue)  {
 		let cibp = ac.length === 2;
 		if (cibp) {
@@ -233,7 +233,7 @@ function Grid9({y}) {
 
 export default function GameGrid() {
 	const { clearSelectedCell } = useGameStateStore();
-	console.log("GameGrid");
+	//console.log("GameGrid");
 	const index = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
 	function modalConfirm() {

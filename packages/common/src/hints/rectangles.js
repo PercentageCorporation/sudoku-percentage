@@ -1,5 +1,5 @@
 import { Rows, Cols, Squares, cellRow, cellCol, cellSquare, sqRows012, sqCols012, RCS } from '@sudoku/common/utilities/constants';
-import { sameRow2, sameCol2 } from './hints';
+import { sameRow2, sameCol2, addToTargetlist } from './hints';
 import { hintcells, hintcandidates, vSqs } from './hints';
 import { includesAll } from './hints';
 import { rcsContainsValue, findTargets, findSeenTargets2,  findSeenTargets3, findTargetsOnly } from './hints';
@@ -118,108 +118,112 @@ function findMatchingConjugatePairs(cpairs, v, r, c, s) {
 // Empty Rectangles
 
 export function emptyRectangles() {
-	var rectangles = [];
-	var cpairs = getConjugatePairs();
+	let rectangles = [];
+	let cpairs = getConjugatePairs();
 	// cpairs: [ value, [cix0, [ac0]], [cix1, [ac1]] ]
 	//console.log("cpairs", cpairs);
 
 	//console.log("vSqs", vSqs);
 	// for each value, for each square find those that are only in one row and one col
-	for (var s=0; s<9; ++s) {
-		for (var value=1; value<10; ++value) {
-			var sv = vSqs[s][value];
+	for (let s=0; s<9; ++s) {
+		for (let value=1; value<10; ++value) {
+			let sv = vSqs[s][value];
 			if (sv < 2 || sv > 5) continue;
 
 			// get the pattern of the value in the square
-			var rowcol = [[0,0,0],[0,0,0],[0,0,0]];
-			var sqcells = [];
-			var sq = Squares[s];
-			for (var i=0; i<9; ++i) {
-				var cix = sq[i];
+			let rowcol = [[0,0,0],[0,0,0],[0,0,0]];
+			let sqcells = [];
+			let sq = Squares[s];
+			for (let i=0; i<9; ++i) {
+				let cix = sq[i];
 				if (!cellHasCandidate(cix, value)) continue;
 				sqcells.push(cix);
-				var r = Math.floor(i / 3);
-				var c = i % 3;
+				let r = Math.floor(i / 3);
+				let c = i % 3;
 				++rowcol[r][c];
 			}
 
-			var vrcs = [];
+			let vrcs = [];
 			if (sv === 2) {
-				var c0 = sqcells[0];
-				var c1 = sqcells[1];
+				let c0 = sqcells[0];
+				let c1 = sqcells[1];
 				if (sameRow2(c0, c1) >= 0) continue;
 				if (sameCol2(c0, c1) >= 0) continue;
 				//console.log("er2", s, value, c0, c1, sv)
 				// since there are only two cells not in the same row or col
 				// we can use either row/col combination as possibilities
-				var c0r = cellRow[c0];
-				var c0c = cellCol[c0];
-				var c1r = cellRow[c1];
-				var c1c = cellCol[c1];
+				let c0r = cellRow[c0];
+				let c0c = cellCol[c0];
+				let c1r = cellRow[c1];
+				let c1c = cellCol[c1];
 
 				vrcs.push([s, value, c0r, c1c]);
 				vrcs.push([s, value, c1r, c0c]);
 			} else {
 				// only one row and one column can have more than one count
 				// at least one row and one column must be greater than zero
-				var is = findIntersection(rowcol);
+				let is = findIntersection(rowcol);
 				if (!is) continue;
 
-				var rc = is[0];
-				var cc = is[1];
-				var row = sqRows012[s][rc];
-				var col = sqCols012[s][cc];
+				let rc = is[0];
+				let cc = is[1];
+				let row = sqRows012[s][rc];
+				let col = sqCols012[s][cc];
 				//console.log("er35", s, value, is, rc, cc, row, col, sv, rowcol);
 				vrcs.push([s, value, row, col]);
 			}
 
 			if (!vrcs) continue;
 			//console.log("cps", cps);
-			for (var vx=0; vx<vrcs.length; ++vx) {
-				var vr = vrcs[vx];
-				var row = vr[2];
-				var col = vr[3];
+			for (let vx=0; vx<vrcs.length; ++vx) {
+				let vr = vrcs[vx];
+				let row = vr[2];
+				let col = vr[3];
 				//console.log("vr", s, value, row, col, rowcol);
 
 				// find a conjugate pairs for value with one end in the same row or column (but not same square) as the empty rectangle
-				var cps = findMatchingConjugatePairs(cpairs, value, row, col, s);
+				let cps = findMatchingConjugatePairs(cpairs, value, row, col, s);
 				for (const cp of cps) {
 					//console.log("cp", cp);
 					// see if there are any candidates at the intersecting cell
-					var target = null;
+					let targetlist = [];
 					if (cp[0] === 'c') {
 						// get the intersecting cell at row rc, column cps[1][1]
-						var ccol = cp[2];
-						var ccix = Rows[row][ccol];
+						let ccol = cp[2];
+						let ccix = Rows[row][ccol];
 						//console.log("checking c", row, ccol, ccix);
 						if (cellHasCandidate(ccix, value)) {
-							target = ccix;
+							addToTargetlist(targetlist, ccix,value);
 						}
 					} else if (cp[0] === 'r') {
 						// get the intersecting cell at row cps[1][0] column cc
-						var crow = cp[1];
-						var rcix = Rows[crow][col];
+						let crow = cp[1];
+						let rcix = Rows[crow][col];
 						//console.log("checking r", crow, col, rcix);
 						if (cellHasCandidate(rcix, value)) {
-							target = rcix;
+							addToTargetlist(targetlist, rcix,value);
 						}
 					}
 
-					if (target) {
+					if (targetlist.length > 0) {
 						//console.log("target", s, sqcells, value, cp[3], target)
-						var cls = [...sqcells];
-						cls.push(cp[3]);
-						cls.push(cp[4]);
+						let wings = [cp[3],cp[4]];
+						let cls = [...sqcells, ...wings];
+						let val = targetlist[0][1][0];
+						let tgt = targetlist[0][0][0];
 						//console.log("h", cls, target, value);
-						var h = {
+						let h = {
 							type: 'emptyRectangle',
 							rows: null,
 							cols: null,
 							square: null,
+							base: sqcells,
+							wings: wings,
 							cells: cls,
-							values: [value],
-							targets: [target],
-							msg: `Empty Rect: Cells: ${target}, Value: ${value}`
+							targetlist: targetlist,
+							values: [val],
+							targets: [tgt],
+							msg: `Empty Rect: Cells: ${tgt}, Value: ${val}`
 						}
 						rectangles.push(h);
 						break;

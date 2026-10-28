@@ -310,4 +310,11 @@ export function formatSolution(gameId, solutionLog) {
 	return solutionText;
 }
 
+export function formatTargetlist(targetlist) {
+	let fmt = "Targets:";
+	for (const t of targetlist) {
+		fmt += ` ${t[0]}:${t[1]}`
+	}
+	return fmt;
+}
 

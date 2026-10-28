@@ -1,5 +1,6 @@
 import { Rows, Cols, Squares } from '@sudoku/common/utilities/constants';
-import { findTargets, findInternalTargets, includesAll } from './hints';
+import { formatTargetlist } from '@sudoku/common/utilities/utilities';
+import { findTargets, findTargetlist, findInternalTargetlist, includesAll, separateTargetlist } from './hints';
 import { hintcells, hintcandidates, vRows, vCols, vSqs } from './hints';
 
 
@@ -73,22 +74,22 @@ function findPairs(arr) {
 
 // return an array of cells which contain naked pairs
 export function nakedPairs() {
-	var np = [];
+	let np = [];
 
 	// for each row/col/sq find a pair and look for another
-	for (var i=0; i<9; ++i) {
-		var rp = findPairs(Rows[i])
+	for (let i=0; i<9; ++i) {
+		let rp = findPairs(Rows[i])
 		if (rp.length > 0) np.push(['r',i,rp[0][0],rp[0][1],rp[0][2]]);
-		var cp = findPairs(Cols[i])
+		let cp = findPairs(Cols[i])
 		if (cp.length > 0) np.push(['c',i,cp[0][0],cp[0][1],cp[0][2]]);
-		var sp = findPairs(Squares[i])
+		let sp = findPairs(Squares[i])
 		if (sp.length > 0) np.push(['s',i,sp[0][0],sp[0][1],sp[0][2]]);
 	}
 
 	//console.log("np:", np);
 
 	// for each pair check if there are any elimination targets
-	var npHints = [];
+	let npHints = [];
 	// for each pair, count the number of occurances in the row
 	// np: rcs, index, rcs, [cri], cells, vals
 	for (const npi of np) {
@@ -102,9 +103,9 @@ export function nakedPairs() {
 		rcs === 'c' ? Cols[rcsix] :
 		Squares[rcsix];
 
-		const tgts = findTargets(house, vals, cls);
+		const tgts = findTargetlist(house, vals, cls);
 
-		if (!tgts || tgts.length === 0) continue;
+		if (tgts === null || tgts.length === 0) continue;
 
 		const direction =
 		rcs === 'r' ? 'row' :
@@ -116,25 +117,25 @@ export function nakedPairs() {
 
 	//console.log("npHints", npHints);
 
-	var nakedPairs = [];
+	let nakedPairs = [];
 
 	for (const nph of npHints) {
 		//console.log("nph", nph);
-		var dir = nph[0];
-		var cls = nph[2];
-		var vals = nph[3];
-		var tgts = nph[4];
-		var msg = `Naked Pair: Cells:  ${cls}, Values: ${vals}`;
+		let dir = nph[0];
+		let cls = nph[2];
+		let tgts = nph[4];
+		let {targets, values} = separateTargetlist(tgts);
+		let msg = `Naked Pair: Cells:  ${targets}, Values: ${values}`;
 
-		var h = {
+		let h = {
 			type: "nakedPair",
 			direction: dir,
 			row: null,
 			col: null,
 			square: null,
 			cells: cls,
-			values: vals,
-			targets: tgts,
+			values: values,
+			targets: targets,
 			msg: msg
 		};
 
@@ -206,9 +207,9 @@ export function hiddenPairs() {
 		var ix = hp[1];		// house rcs index
 		var vals = hp[2];
 		var cls = [hp[3][0][1],hp[3][1][1]];	// pair cells
-		var tgts = findInternalTargets(cls,vals);
-		if (tgts) {
-			hpTargets.push([rcs,ix,cls,tgts[1],tgts[0]]);
+		var tgts = findInternalTargetlist(cls,vals);
+		if (tgts.length > 0) {
+			hpTargets.push([rcs,ix,cls,tgts]);
 			break;
 		}
 	}
@@ -218,8 +219,9 @@ export function hiddenPairs() {
 	for (const hp of hpTargets) {
 		var rcs = hp[0];
 		var cls = hp[2];
-		var vals = hp[3];
-		var tgts = hp[4]
+		var tgtlist = hp[3];
+		let {targets, values} = separateTargetlist(tgts);
+		let msg = "Hidden Pair: " + formatTargetlist(tgts);
 		//console.log(dir,trc0,cls)
 
 		var h = {
@@ -228,9 +230,10 @@ export function hiddenPairs() {
 			cols: rcs === 'c' ? rcs : null,
 			square: rcs === 's' ? rcs : null,
 			cells: cls,
-			values: vals,
-			targets: tgts,
-			msg: `Hidden Pair: Cells: ${tgts}, Values: ${vals}`
+			findTargetlist: tgtlist,
+			values: values,
+			targets: targets,
+			msg: msg
 		}
 		hiddenPairs.push(h);
 		break;

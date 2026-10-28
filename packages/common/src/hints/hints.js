@@ -1,6 +1,7 @@
 import { cellStore, useManCellsStore } from "@sudoku/common/store/store";
 import { useHintStore } from "@sudoku/common/store/hintStore";
 import {Rows, Cols, Squares, cellRow, cellCol, cellSquare, RCS} from '@sudoku/common/utilities/constants';
+
 import { singletons, singleCounts } from "./singles";
 import { uniqueRectangles, emptyRectangles } from './rectangles';
 import { nakedPairs, hiddenPairs } from "./pairs";
@@ -122,11 +123,8 @@ export function showHintStats() {
 }
 
 export function resetHintStats() {
-	console.log("resetHintStats");
-	// hintStats.functions = {};
-	// hintStats.types = {};
+	//console.log("resetHintStats");
 	useHintStore.getState().resetHintStats();
-
 }
 
 export function runManHints() {
@@ -316,6 +314,36 @@ export function findAllCellsWithValue(value) {
 	return all;
 }
 
+export function addToTargetlist(targetlist, cell, value) {
+	if (!targetlist) targetlist = [];
+	for (let tl of targetlist) {
+		if (tl[0].includes(cell)&& !tl[1].includes(value)) {
+			if ( hintcandidates[cell].includes(value) ) tl[1].push(value);
+			return targetlist;
+		}
+	}
+	if ( hintcandidates[cell].includes(value) ) targetlist.push([[cell],[value]])
+	targetlist.sort((a,b) => a[0]-b[0]);
+	return targetlist;
+}
+
+export function packTargetlist(arr) {
+	const map = new Map();
+
+	for (const [a, b] of arr) {
+		//const key = JSON.stringify(b);
+		const key = JSON.stringify([...b].sort((x, y) => x - y));
+
+		if (map.has(key)) {
+			map.get(key)[0].push(...a);
+		} else {
+			map.set(key, [[...a], [...b]]);
+		}
+	}
+
+	return [...map.values()];
+}
+
 // find cells in the array which contain any of vals, excluding cells in ex
 export function findTargets(arr,vals,ex) {
 	var targets = [];
@@ -331,6 +359,34 @@ export function findTargets(arr,vals,ex) {
 	}
 	if (targets.length === 0) return null;
 	return targets;
+}
+
+export function findTargetlist(arr,vals,ex) {
+	var targetslist = [];
+	var alen = arr.length;
+	for (var i=0; i<alen; ++i) {
+		var cix = arr[i];
+		if (hintcells[cix] > 0) continue;
+		if (!ex.includes(cix)) {
+			for (const value of vals) {
+				if (hintcandidates[cix].includes(value)) {
+					addToTargetlist(targetslist,cix,value);
+				}
+			}
+		}
+	}
+	if (targetslist.length === 0) return null;
+	return targetslist;
+}
+
+export function separateTargetlist(targetlist) {
+	let targets = [];
+	let values = [];
+	for (const t of targetlist) {
+		targets.push(...t[0]);
+		values.push(...t[1]);
+	}
+	return {targets, values};
 }
 
 // find cells in the array which contain all of the vals, excluding cells in ex
@@ -390,21 +446,24 @@ export function findTargetsSeenByBoth(v, cls0, cls1) {
 }
 
 // find any values in the cells that are not in the vals list
-export function findInternalTargets(cls,vals) {
+export function findInternalTargetlist(cls,vals) {
+	let targetlist = [];
 	var tgts = new Set();
 	var tgtvals = new Set();
 	for (const cix of cls) {
 		if (hintcells[cix] > 0) continue;
 		hintcandidates[cix].forEach((c) => {
 			if (!vals.includes(c)) {
+				addToTargetlist(targetlist, cix, c);
 				tgts.add(cix);
 				tgtvals.add(c);
 			}
 		})
 	}
 
-	if (tgts.size === 0) return null;
-	return [Array.from(tgts).sort(),Array.from(tgtvals).sort()];
+	return targetlist;
+	//if (tgts.size === 0) return null;
+	//return [Array.from(tgts).sort(),Array.from(tgtvals).sort()];
 }
 
 // get all cells with candidates from array excluding cells in ex
