@@ -10,6 +10,7 @@ std::optional<Hint> nakedPairs(const Board& board);
 std::optional<Hint> nakedTriples(const Board& board);
 std::optional<Hint> hiddenPairs(const Board& board);
 std::optional<Hint> hiddenTriples(const Board& board);
+std::optional<Hint> quads(const Board& board);
 std::optional<Hint> uniqueRectangles(const Board& board);
 std::optional<Hint> emptyRectangles(const Board& board);
 std::optional<Hint> xWing(const Board& board);
@@ -23,8 +24,9 @@ std::optional<Hint> colors(const Board& board);
 std::optional<Hint> colorWing(const Board& board);
 std::optional<Hint> swordfish(const Board& board);
 std::optional<Hint> suedecoq(const Board& board);
+std::optional<Hint> als(const Board& board);
 std::optional<Hint> forcingChains(const Board& board);
 void diagnoseForcingAssumption(const Board& board, int ix, int digit, std::ostream& out);
 std::optional<Hint> biforce(const Board& board);
-std::optional<Hint> aic(const Board& board);
+std::optional<Hint> loops(const Board& board);
 }

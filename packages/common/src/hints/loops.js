@@ -116,14 +116,21 @@ function nextLink(clix, level) {
 	let curlink = chain[clix];	// current link in the chain
 	++level;
 	if (level > maxlevel) maxlevel = level;
+
+	if (level > 25 || chain.length > 5000) {
+		console.log("Way too deep ********************", level, chain.length);
+		console.log(chain[0]);
+		console.log(curlink);
+		//let sc = structuredClone(chain);
+		//console.log(sc);
+		return [];
+	}
+
 	//console.log("nextlink", clix, level, curlink[0]);
-	//let sc = structuredClone(chain);
-	//console.log(sc);
 
 	let ep = curlink[0];	// incoming link endpoint
 	let epac = curlink[1];	// candiates
 	let epval = curlink[2];
-	let bvval = curlink[3];	// incoming bivalue alternate candidate
 	let wsin = curlink[4];	// weak/strong
 
 	if (chain.length > 2) {
@@ -146,8 +153,8 @@ function nextLink(clix, level) {
 						let path = getCurrentPath(clix);
 						let aic2 = [startval, epval, startep, ep, tgts, path];
 						let h = makeHint2(aic2);
-						console.log(aic2);
-						console.log(chain);
+						//console.log(aic2);
+						//console.log(chain);
 						return [h];
 					}
 				}
@@ -167,8 +174,8 @@ function nextLink(clix, level) {
 						if (tgts.length > 0) {
 							let aic1l = [startval, epval, startep, ep, tgts, path];
 							let h = makeLoopHint(aic1l);
-							console.log(aic1l);
-							console.log(chain);
+							//console.log(aic1l);
+							//console.log(chain);
 							return [h];
 						}
 					}
@@ -180,20 +187,13 @@ function nextLink(clix, level) {
 						let path = getCurrentPath(clix);
 						let aic = [val, ep0, ep, tgts, path];
 						let h = makeHint(aic);
-						console.log(aic);
-						console.log(chain);
+						//console.log(aic);
+						//console.log(chain);
 						return [h];
 					}
 				}
 			}
 		}
-	}
-
-	if (level > 25) {
-		console.log("Way too deep ********************", level);
-		console.log(chain[0]);
-		console.log(sc);
-		return [];
 	}
 
 	let nextstrong = (wsin === 'w');	// if incoming link is weak, the next link must be strong
@@ -337,46 +337,6 @@ function nextLink(clix, level) {
 
 }
 
-// construct the list of path cells from the links
-// going from bottom up
-// chain: [ [ ep, ac, inval, outval, linktype, prev link, [next links] ] ]
-function getAICPaths(chain) {
-	// link: [ val, cix, prevlink, [nextlinks] ]
-	let paths = [];
-	let end = chain.length - 1;
-	if (end === 0) return paths;
-
-	let startval = chain[0][2]
-
-	for (let i=end; i >= 0; --i) {
-		// find the first link with the start value
-		if (chain[i][6].length > 0) continue;
-		//if (chain[i][2] !== startval) continue;	// the end must match the start
-		//console.log("endchain", i, startval);
-		let path = [];
-		// follow the path up
-		let j = i;
-		while (j >= 0) {
-			let linkj = chain[j];
-			path.push(j);
-			j = linkj[5];	// back up the chain
-			//console.log("prev link", j);
-		}
-		// long enough and odd number of links
-		let plen = path.length;
-		if (plen >= 3) {
-			// check if the endpoint values match
-			path.reverse();
-			let cpath = [];
-			path.forEach((p) => {
-				cpath.push([chain[p][0],chain[p][2],chain[p][3]]);
-			})
-			paths.push(cpath);
-		}
-	}
-
-	return paths;
-}
 
 //*****************************************************************************
 // loops AIC Type 1
@@ -524,141 +484,6 @@ function findTargetsCorners(val, c0, c1) {
 	return tgts;
 }
 
-// aic chain with value matching endpoints that cannot see each other
-function findAIC_I(path) {
-	let aic1 = [];
-
-	let sep = path[0][0];
-	let sval = path[0][1];
-	let end = path.length - 1;
-	// back up from the end looking for the start value
-	for (let i=end; i>3; i-=2) {
-		if (path[i][1] === sval) {
-			let epi = path[i][0];
-			// make sure the endpoints cannot see each other
-			if (!canSeeEachOther(sep, epi)) {
-				let tgts = findTargetsCorners(sval, sep, epi);
-				let apath = path.slice(0, i+1);
-				//console.log("aic1", sval, sep, epi, tgts, apath);
-				if (tgts.length > 0) {
-					aic1.push([sval, sep, epi, tgts, apath]);
-				}
-			}
-		}
-	}
-	if (aic1.length === 0) return null;
-	return aic1;
-}
-
-// aic chain with different value endpoints that can see each other
-function findAIC_II(path) {
-	let aic2 = [];
-
-	let sep = path[0][0];
-	let sval = path[0][1];
-	let end = path.length - 1;
-	// back up from the end looking for the start value
-	for (let i=end; i>3; i-=2) {
-		// start/end values cannot match
-		if (path[i][1] !== sval) {
-			let epi = path[i][0];
-			// make sure the endpoints can see each other
-			if (canSeeEachOther(sep, epi)) {
-				let endval = path[i][1];
-				let tgts = [];
-				if (cellHasCandidate(sep, endval)) {
-					tgts.push([[sep],[endval]]);
-				}
-				if (cellHasCandidate(epi, sval)) {
-					tgts.push([[epi],[sval]]);
-				}
-				let apath = path.slice(0, i+1);
-				//console.log("aic2", sval, sep, epi, tgts, apath);
-				if (tgts.length > 0) {
-					aic2.push([sval, sep, epi, tgts, apath]);
-				}
-			}
-		}
-	}
-	if (aic2.length === 0) return null;
-	return aic2;
-}
-
-// aic chain with value matching endpoints that can see each other and share a candidate
-function findAIC_I_Loop(path) {
-	let aic1l = [];
-
-	let sep = path[0][0];
-	let sval = path[0][1];
-	let end = path.length - 1;
-	// back up from the end looking for the start value
-	for (let i=end; i>3; i-=2) {
-		if (path[i][1] === sval) {
-			let epi = path[i][0];
-			// if the endpoints can see each other and have a common candidate
-			if (canSeeEachOther(sep, epi)) {
-				let com = getCommonCandidates(sep, epi);
-				if (com.length > 0) {
-					let apath = path.slice(0, i+1);
-					let tgts = findLoopTargets(apath);
-					//console.log("aic1loop", sval, sep, epi, tgts, apath);
-					if (tgts.length > 0) {
-						aic1l.push([sval, sep, epi, tgts, apath]);
-					}
-				}
-			}
-		}
-	}
-	if (aic1l.length === 0) return null;
-	return aic1l;
-}
-
-function processPaths(paths) {
-	let loophints = [];
-	let hints = [];
-	// for (let ap=0; ap<paths.length; ++ap) {
-	// 	let p = paths[ap]
-	// 	//console.log("patha", p);
- //
-	// 	let aic1loop = findAIC_I_Loop(p);
-	// 	if (aic1loop) {
-	// 		//console.log("ppaic1Loop", ap, aic1loop);
-	// 		loophints.push(makeLoopHint(aic1loop[0]));
-	// 		return loophints;
-	// 	}
- //
-	// 	let aic2 = findAIC_II(p);
-	// 	if (aic2) {
-	// 		//console.log("ppaic2", ap, aic2);
-	// 		hints.push(makeHint2(aic2[0]));
-	// 		return hints;
-	// 	}
-	// }
-
-	// we don't need long paths any more so save the shortest
-	//let spaths = filterShortest(paths);
-	let spaths = paths;
-	//console.log(paths.length, spaths.length, spaths);
-
-	for (let ap=0; ap<spaths.length; ++ap) {
-		let p = spaths[ap]
-		//console.log("pathb", p);
-		let aic1 = findAIC_I(p);
-		if (aic1) {
-			console.log("ppaic1", ap, aic1, p);
-			console.log(chain);
-			hints.push(makeHint(aic1[0]));
-			return hints;
-		}
-	}
-
-	//console.log("loophints", loophints);
-	if (loophints.length > 0) return loophints;
-	//console.log("hints", hints);
-	return hints;
-
-}
-
 function makeHint(aic) {
 	// aic: sval, sep, epi, tgts, apath
 	let val = aic[0];
@@ -705,9 +530,7 @@ function makeHint(aic) {
 
 function makeHint2(aic2) {
 	// aic2: startval, epval, startep, ep, tgts, path
-	console.log("aic2", aic2);
-	let val0 = aic2[0];
-	let val1 = aic2[1];
+	//console.log("aic2", aic2);
 	let ep0 = aic2[2];
 	let ep1 = aic2[3];
 	let targets = aic2[4];
@@ -759,9 +582,9 @@ function makeHint2(aic2) {
 
 function makeLoopHint(aic) {
 	// aic: startval, epval, startep, ep, tgts, path];
-	console.log("aic1l", aic);
-	let ep0 = aic[0];
-	let ep1 = aic[1];
+	//console.log("aic1l", aic);
+	let ep0 = aic[2];
+	let ep1 = aic[3];
 	let tgtslist = aic[4];
 	let path = aic[5];
 

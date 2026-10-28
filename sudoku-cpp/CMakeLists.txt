@@ -2,8 +2,12 @@ cmake_minimum_required(VERSION 3.16)
 project(sudoku_engine LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-add_library(sudoku_engine STATIC src/engine.cpp src/solver.cpp src/fixture.cpp
-    src/techniques/singles.cpp src/techniques/locked.cpp src/techniques/fish.cpp src/techniques/pairs.cpp src/techniques/triples.cpp src/techniques/rectangles.cpp src/techniques/loops.cpp src/techniques/wings.cpp src/techniques/chains.cpp src/techniques/colors.cpp src/techniques/swordfish.cpp src/techniques/suedecoq.cpp src/techniques/forcing.cpp)
+add_library(sudoku_engine STATIC src/engine.cpp src/statistics.cpp src/solver.cpp src/fixture.cpp
+    src/techniques/singles.cpp src/techniques/locked.cpp src/techniques/fish.cpp src/techniques/pairs.cpp src/techniques/triples.cpp src/techniques/quads.cpp src/techniques/rectangles.cpp src/techniques/loops.cpp src/techniques/wings.cpp src/techniques/chains.cpp src/techniques/colors.cpp src/techniques/swordfish.cpp src/techniques/suedecoq.cpp src/techniques/als.cpp src/techniques/forcing.cpp)
+option(SUDOKU_LOOPS_FIRST "Prioritize loops before all other techniques" OFF)
+if(SUDOKU_LOOPS_FIRST)
+    target_compile_definitions(sudoku_engine PRIVATE SUDOKU_LOOPS_FIRST)
+endif()
 target_include_directories(sudoku_engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_options(sudoku_engine PRIVATE -Wall -Wextra -Wpedantic)
 add_executable(sudoku_tests tests/tests.cpp)
@@ -143,3 +147,16 @@ add_executable(sudoku_technique_dispatch_tests tests/technique_dispatch_tests.cp
 target_link_libraries(sudoku_technique_dispatch_tests PRIVATE sudoku_engine)
 add_test(NAME sudoku_technique_dispatch_tests COMMAND sudoku_technique_dispatch_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/forced2.json)
+
+add_executable(sudoku_loops_easter_monster_tests tests/loops_easter_monster_tests.cpp)
+target_link_libraries(sudoku_loops_easter_monster_tests PRIVATE sudoku_engine)
+add_test(NAME regression_loops_easter_monster COMMAND sudoku_loops_easter_monster_tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/Easter_Monster.json)
+
+add_executable(sudoku_quads_tests tests/quads_tests.cpp)
+target_link_libraries(sudoku_quads_tests PRIVATE sudoku_engine)
+add_test(NAME quads COMMAND sudoku_quads_tests)
+
+add_executable(sudoku_statistics_tests tests/statistics_tests.cpp)
+target_link_libraries(sudoku_statistics_tests PRIVATE sudoku_engine)
+add_test(NAME statistics COMMAND sudoku_statistics_tests)

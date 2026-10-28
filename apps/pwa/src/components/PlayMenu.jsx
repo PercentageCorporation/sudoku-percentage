@@ -216,6 +216,8 @@ export default function PlayMenu() {
 
 	function handleCopyStatistics(e) {
 		e.preventDefault();
+		const history = useHintStore(s => s.hintHistory);
+		console.log(history);
 		let hintStats = showHintStats();
 		navigator.clipboard.writeText(JSON.stringify(hintStats, null, 2));
 	}

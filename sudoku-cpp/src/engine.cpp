@@ -1,6 +1,7 @@
 #include "sudoku/engine.hpp"
 #include "sudoku/techniques.hpp"
 #include <bit>
+#include <chrono>
 #include <stdexcept>
 #include <utility>
 
@@ -87,30 +88,45 @@ bool apply(Board& board, const Deduction& d) {
 
 std::optional<Hint> HintEngine::findNextHint(const Board& board) const {
     if (!board.valid() || board.solved()) return std::nullopt;
-    if (auto hint = techniques::singletons(board)) return hint;
-    if (auto hint = techniques::singleCounts(board)) return hint;
-    if (auto hint = techniques::lockedCandidates1(board)) return hint;
-    if (auto hint = techniques::lockedCandidates2(board)) return hint;
-    if (auto hint = techniques::nakedPairs(board)) return hint;
-    if (auto hint = techniques::nakedTriples(board)) return hint;
-    if (auto hint = techniques::hiddenPairs(board)) return hint;
-    if (auto hint = techniques::hiddenTriples(board)) return hint;
-    if (auto hint = techniques::xWing(board)) return hint;
-    if (auto hint = techniques::swordfish(board)) return hint;
-    if (auto hint = techniques::uniqueRectangles(board)) return hint;
-    if (auto hint = techniques::emptyRectangles(board)) return hint;
-    if (auto hint = techniques::xChain(board)) return hint;
-    if (auto hint = techniques::xyChain(board)) return hint;
-    if (auto hint = techniques::xyWing(board)) return hint;
-    if (auto hint = techniques::xyzWing(board)) return hint;
-    if (auto hint = techniques::wWing(board)) return hint;
-    if (auto hint = techniques::wxyzWing(board)) return hint;
-    if (auto hint = techniques::colors(board)) return hint;
-    if (auto hint = techniques::colorWing(board)) return hint;
-    if (auto hint = techniques::suedecoq(board)) return hint;
-    if (auto hint = techniques::aic(board)) return hint;
-    if (auto hint = techniques::forcingChains(board)) return hint;
-    if (auto hint = techniques::biforce(board)) return hint;
+    const auto timed = [&](const char* name, auto fn) -> std::optional<Hint> {
+        const auto start = std::chrono::steady_clock::now();
+        auto result = fn(board);
+        const auto end = std::chrono::steady_clock::now();
+        const double elapsed = std::chrono::duration<double, std::milli>(end - start).count();
+        statistics_.record(name, result, elapsed);
+        return result;
+    };
+#ifdef SUDOKU_LOOPS_FIRST
+    if (auto hint = timed("loops", techniques::loops)) return hint;
+#endif
+    if (auto hint = timed("singletons", techniques::singletons)) return hint;
+    if (auto hint = timed("singleCounts", techniques::singleCounts)) return hint;
+    if (auto hint = timed("nakedPairs", techniques::nakedPairs)) return hint;
+    if (auto hint = timed("nakedTriples", techniques::nakedTriples)) return hint;
+    if (auto hint = timed("lockedCandidates1", techniques::lockedCandidates1)) return hint;
+    if (auto hint = timed("lockedCandidates2", techniques::lockedCandidates2)) return hint;
+    if (auto hint = timed("hiddenPairs", techniques::hiddenPairs)) return hint;
+    if (auto hint = timed("hiddenTriples", techniques::hiddenTriples)) return hint;
+    if (auto hint = timed("quads", techniques::quads)) return hint;
+    if (auto hint = timed("uniqueRectangles", techniques::uniqueRectangles)) return hint;
+    if (auto hint = timed("emptyRectangles", techniques::emptyRectangles)) return hint;
+    if (auto hint = timed("suedecoq", techniques::suedecoq)) return hint;
+    if (auto hint = timed("XWing", techniques::xWing)) return hint;
+    if (auto hint = timed("XChain", techniques::xChain)) return hint;
+    if (auto hint = timed("XYChain", techniques::xyChain)) return hint;
+    if (auto hint = timed("XYWing", techniques::xyWing)) return hint;
+    if (auto hint = timed("XYZWing", techniques::xyzWing)) return hint;
+    if (auto hint = timed("WWing", techniques::wWing)) return hint;
+    if (auto hint = timed("WXYZWing", techniques::wxyzWing)) return hint;
+    if (auto hint = timed("swordfish", techniques::swordfish)) return hint;
+    if (auto hint = timed("colors", techniques::colors)) return hint;
+    if (auto hint = timed("colorWing", techniques::colorWing)) return hint;
+    if (auto hint = timed("als", techniques::als)) return hint;
+#ifndef SUDOKU_LOOPS_FIRST
+    if (auto hint = timed("loops", techniques::loops)) return hint;
+#endif
+    if (auto hint = timed("forcing", techniques::forcingChains)) return hint;
+    if (auto hint = timed("forcingBV", techniques::biforce)) return hint;
     return std::nullopt;
 }
 

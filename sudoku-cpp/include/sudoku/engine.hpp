@@ -3,6 +3,7 @@
 #include "sudoku/constants.hpp"
 #include <cstdint>
 #include <optional>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -52,9 +53,34 @@ struct Step {
     std::vector<Change> changes;
 };
 
+struct FunctionStats {
+    std::uint64_t calls = 0, successes = 0;
+    double time = 0, successTime = 0, failureTime = 0, maxTime = 0;
+};
+struct TypeStats {
+    std::uint64_t count = 0;
+    double time = 0;
+};
+class HintStatistics {
+public:
+    void record(const std::string& function, const std::optional<Hint>& result, double elapsedMs);
+    void reset();
+    const std::map<std::string, FunctionStats>& functions() const { return functions_; }
+    const std::map<std::string, TypeStats>& types() const { return types_; }
+    // Same field names and sort order as JavaScript getHintStats().
+    std::string toJson() const;
+private:
+    std::map<std::string, FunctionStats> functions_;
+    std::map<std::string, TypeStats> types_;
+};
+
 class HintEngine {
 public:
     std::optional<Hint> findNextHint(const Board& board) const;
+    const HintStatistics& statistics() const { return statistics_; }
+    void resetStatistics() const { statistics_.reset(); }
+private:
+    mutable HintStatistics statistics_;
 };
 
 class Solver {
@@ -63,6 +89,8 @@ public:
     std::optional<Step> nextStep();
     std::vector<Step> solve(int maxSteps = 1000);
     const Board& board() const { return board_; }
+    const HintStatistics& statistics() const { return engine_.statistics(); }
+    void resetStatistics() { engine_.resetStatistics(); }
     const std::vector<Step>& history() const { return history_; }
 private:
     Board board_;

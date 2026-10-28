@@ -17,6 +17,8 @@ inline std::optional<Hint> findHintByName(const Board& board, const std::string&
     if (name == "nakedTriples") return techniques::nakedTriples(board);
     if (name == "hiddenPairs") return techniques::hiddenPairs(board);
     if (name == "hiddenTriples") return techniques::hiddenTriples(board);
+    if (name == "quads") return techniques::quads(board);
+    if (name == "als") return techniques::als(board);
     if (name == "uniqueRectangles") return techniques::uniqueRectangles(board);
     if (name == "emptyRectangles") return techniques::emptyRectangles(board);
     if (name == "xWing") return techniques::xWing(board);
@@ -30,7 +32,7 @@ inline std::optional<Hint> findHintByName(const Board& board, const std::string&
     if (name == "colors") return techniques::colors(board);
     if (name == "colorWing") return techniques::colorWing(board);
     if (name == "suedecoq") return techniques::suedecoq(board);
-    if (name == "aic") return techniques::aic(board);
+    if (name == "loops") return techniques::loops(board);
     if (name == "forcing" || name == "forcingChains") return techniques::forcingChains(board);
     if (name == "biforce") return techniques::biforce(board);
     throw std::invalid_argument("Unknown technique: " + name);

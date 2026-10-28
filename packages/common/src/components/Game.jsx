@@ -16,14 +16,14 @@ export default function Game() {
 	const { newGame, resetGame, initGame, loadGame, clearCandidates, resetCandidates, saveState, restoreState, getLinearText, getJSON } = useCellActions();
 	const { resetState, showSolution, toggleShowSolution, clearSolutionLog } = useGameStateStore();
 	const [ loadSavedGame, setLoadSavedGame ] = useState(false);
-	const { resetHint } = useHintStore();
+	const { resetHint, useCPP, toggleUseCPP, setHintsRunning } = useHintStore();
 	const { setScreen } = useScreenStore();
 
-	console.log("App", gameLoaded, difficulty, gameId);
+	console.log("Game", gameLoaded, difficulty, gameId);
 	//console.log("saved", saved.length);
 
 	useEffect(() => {
-		console.log("App UE");
+		console.log("Game UE");
 		async function load_game() {
 			//const { game, solution, difficulty } = await getSudokuSoluitons();
 			const g = getSampleGame();
@@ -38,6 +38,7 @@ export default function Game() {
 
 	function handleNewGame(e) {
 		e.preventDefault();
+		setHintsRunning(false);
 		newGame();
 		resetState();
 		clearSolutionLog();
@@ -57,6 +58,7 @@ export default function Game() {
 
 	function handleSaveGame(e) {
 		e.preventDefault();
+		setHintsRunning(false);
 		saveState();
 		//navigate("/", { replace: true });
 	}
@@ -88,21 +90,25 @@ export default function Game() {
 	function handleManualGame(e) {
 		e.preventDefault();
 		resetGame();
+		setHintsRunning(false);
 		setScreen('manual');
 	}
 
 	function handleLoadGame(e) {
 		e.preventDefault();
+		setHintsRunning(false);
 		setLoadSavedGame(true);
 	}
 
 	function handleExportJSON(e) {
 		e.preventDefault();
+		setHintsRunning(false);
 		downloadSudokuFixture(gameId);
 	}
 
 	function handleLoadJSON(e) {
 		e.preventDefault();
+		setHintsRunning(false);
 		importSudokuFixture(gameId);
 	}
 
@@ -110,6 +116,7 @@ export default function Game() {
 		//console.log("load game", ix);
 		setLoadSavedGame(false);
 		resetHintStats();
+		setHintsRunning(false);
 		resetState();
 		clearSolutionLog();
 
@@ -129,6 +136,7 @@ export default function Game() {
 
 	function handleShowLinear(e) {
 		e.preventDefault();
+		setHintsRunning(false);
 		var linear = getLinearText();
 		//alert(linear);
 		console.log(linear);
@@ -146,6 +154,12 @@ export default function Game() {
 	function handleShowStatistics(e) {
 		e.preventDefault();
 		setScreen('statistics');
+	}
+
+	function handleToggleHints(e) {
+		e.preventDefault();
+		setHintsRunning(false);
+		toggleUseCPP();
 	}
 
 	if (!gameLoaded) return <Spinner />;
@@ -265,6 +279,14 @@ export default function Game() {
 						>
 						Export JSON
 					</button>
+					<button
+						type="button"
+						tabIndex={-1}
+						onClick={(e) => handleToggleHints(e)}
+						className="px-2 py-2 bg-blue-300 rounded hover:cursor-pointer"
+						>
+						{`${useCPP ? 'Use JavaScript Hints' : 'Use C++ Hints'}`}
+						</button>
 				</div>
 			</div>
 		</div>

@@ -50,75 +50,135 @@ struct Search {
         }
         for(int i=0;i<81;++i) if(std::popcount(static_cast<unsigned>(b.cells[i].candidates))==2 && !b.cells[i].value)
             bivals.push_back({i,digits(b,i)});
-        std::sort(bivals.begin(),bivals.end(),[](const auto& x,const auto& y){
-            return x.digits[1]!=y.digits[1]?x.digits[1]<y.digits[1]:x.digits[0]<y.digits[0];
-        });
         for(int i=0;i<static_cast<int>(bivals.size());++i) for(int v:bivals[i].digits) bvByValue[v].push_back(i);
     }
+    static constexpr int maxDepth = 25;
+    static constexpr int maxNodes = 100000;
+    bool exhausted = false;
+    // Mirror loops(9).js endpointInPath/endpointsInPath: a matching
+    // immediate forward link makes the endpoint eligible; ancestors prohibit it.
     bool inPath(int ep,int ix) const {
+        for(int child:chain[ix].children) if(chain[child].cell==ep) return false;
         for(;ix>=0;ix=chain[ix].parent) if(chain[ix].cell==ep) return true;
         return false;
     }
+    bool pairInPath(int a,int b,int ix) const {
+        for(int child:chain[ix].children)
+            if(chain[child].cell==a || chain[child].cell==b) return false;
+        for(;ix>=0;ix=chain[ix].parent)
+            if(chain[ix].cell==a || chain[ix].cell==b) return true;
+        return false;
+    }
+    bool alreadyLinked(int ix,int ep,int val,char kind) const {
+        for(int child:chain[ix].children) {
+            const Node& n=chain[child];
+            if(n.cell==ep && n.in==val && n.link==kind) return true;
+        }
+        return false;
+    }
     int append(Node n) {
+        if(chain.size()>=maxNodes) {exhausted=true;return -1;}
         int ix=static_cast<int>(chain.size());
         int parent=n.parent;
         chain.push_back(std::move(n));
         if(parent>=0) chain[parent].children.push_back(ix);
         return ix;
     }
-    void next(int ix) {
-        // Snapshot current node: appending can reallocate the vector.
-        Node cur=chain[ix];
+    Path path(int ix) const {
+        Path p;
+        for(int j=ix;j>=0;j=chain[j].parent) p.push_back({chain[j].cell,chain[j].in,chain[j].out});
+        std::reverse(p.begin(),p.end());
+        return p;
+    }
+    std::optional<Hint> next(int ix,int level) {
+        if(exhausted) return std::nullopt;
+        Node cur=chain[ix]; // copying avoids vector reallocation invalidating references
+        if(chain.size()>2 && cur.link=='s') {
+            int a=chain[0].cell, v=chain[0].in, c=cur.cell, w=cur.in;
+            if(v!=w && sees(a,c)) {
+                Targets t;
+                if(has(b,c,v)) t.push_back({{c},{v}});
+                if(has(b,a,w)) t.push_back({{a},{w}});
+                if(!t.empty()) if(auto h=make("aicII",path(ix),t)) return h;
+            }
+            if(v==w) {
+                if(sees(a,c)) {
+                    if((b.cells[a].candidates & b.cells[c].candidates)!=0) {
+                        auto p=path(ix); auto t=loopTargets(p);
+                        if(!t.empty()) if(auto h=make("aicIloop",p,t)) return h;
+                    }
+                } else {
+                    int x=Rows[cellRow(a)][cellCol(c)], y=Rows[cellRow(c)][cellCol(a)];
+                    if(x!=a && x!=c && y!=a && y!=c) {
+                        Targets t;
+                        if(has(b,x,v)) t.push_back({{x},{v}});
+                        if(has(b,y,v)) t.push_back({{y},{v}});
+                        if(!t.empty()) if(auto h=make("aicI",path(ix),t)) return h;
+                    }
+                }
+            }
+        }
+        if(level>maxDepth) return std::nullopt;
         if(cur.link=='w') {
+            // A weak incoming link must be followed by a strong link.
             for(int pi:byCell[cur.cell]) {
                 const auto& p=pairs[pi];
                 if(p.value!=cur.in) continue;
                 int other=p.a==cur.cell?p.b:p.a;
-                if(inPath(other,ix)) continue;
+                if(inPath(other,ix)||alreadyLinked(ix,other,p.value,'s')) continue;
                 int ni=append({other,p.value,0,ix,'s',digits(b,other),{}});
-                next(ni);
+                if(ni<0) return std::nullopt;
+                if(auto h=next(ni,level+1)) return h;
             }
-            return;
+            if(cur.digits.size()==2) {
+                int other=cur.digits[0]==cur.in?cur.digits[1]:cur.digits[0];
+                if(!alreadyLinked(ix,cur.cell,other,'s')) {
+                    int ni=append({cur.cell,other,cur.in,ix,'s',cur.digits,{}});
+                    if(ni<0) return std::nullopt;
+                    if(auto h=next(ni,level+1)) return h;
+                }
+            }
+            return std::nullopt;
         }
+        // After a strong incoming link, explore strong pairs, then weak-to-strong pairs,
+        // then weak-to-strong bivalue links (matching the JS ordering).
         for(int pi:byCell[cur.cell]) {
             const auto& p=pairs[pi];
-            if(p.value==cur.in || p.value==cur.out || !has(b,cur.cell,p.value)) continue;
-            int other=p.a==cur.cell?p.b:p.a;
-            if(inPath(other,ix)) continue;
-            int wi=append({cur.cell,p.value,0,ix,'w',cur.digits,{}});
-            int si=append({other,p.value,0,wi,'s',digits(b,other),{}});
-            next(si);
+            if(p.value!=cur.in) continue;
+            int near=cur.cell,far=p.a==cur.cell?p.b:p.a;
+            if(pairInPath(near,far,ix)||alreadyLinked(ix,near,cur.in,'s')) continue;
+            int wi=append({near,cur.in,0,ix,'w',cur.digits,{}});
+            if(wi<0) return std::nullopt;
+            int si=append({far,p.value,0,wi,'s',digits(b,far),{}});
+            if(si<0) return std::nullopt;
+            // JS branch 3 does not add the strong node to the weak node's
+            // forward list (but does link it through its parent index).
+            chain[wi].children.clear();
+            if(auto h=next(si,level+1)) return h;
         }
         for(int pi:byValue[cur.in]) {
             const auto& p=pairs[pi];
-            if(cur.cell==p.a||cur.cell==p.b) continue;
             int near=-1,far=-1;
             if(sees(cur.cell,p.a)) {near=p.a;far=p.b;}
             else if(sees(cur.cell,p.b)) {near=p.b;far=p.a;}
-            if(near<0 || inPath(near,ix) || inPath(far,ix)) continue;
+            if(near<0||pairInPath(near,far,ix)||alreadyLinked(ix,near,cur.in,'w')) continue;
             int wi=append({near,cur.in,0,ix,'w',digits(b,near),{}});
+            if(wi<0) return std::nullopt;
             int si=append({far,p.value,0,wi,'s',digits(b,far),{}});
-            next(si);
+            if(si<0) return std::nullopt;
+            if(auto h=next(si,level+1)) return h;
         }
         for(int bi:bvByValue[cur.in]) {
             const auto& bv=bivals[bi];
-            if(!sees(cur.cell,bv.cell)||inPath(bv.cell,ix)) continue;
+            if(!sees(cur.cell,bv.cell)||inPath(bv.cell,ix)||alreadyLinked(ix,bv.cell,cur.in,'w')) continue;
             int other=bv.digits[0]==cur.in?bv.digits[1]:bv.digits[0];
             int wi=append({bv.cell,cur.in,cur.in,ix,'w',bv.digits,{}});
+            if(wi<0) return std::nullopt;
             int si=append({bv.cell,other,cur.in,wi,'s',bv.digits,{}});
-            next(si);
+            if(si<0) return std::nullopt;
+            if(auto h=next(si,level+1)) return h;
         }
-    }
-    std::vector<Path> paths() const {
-        std::vector<Path> result;
-        for(int i=static_cast<int>(chain.size())-1;i>=0;--i) {
-            if(!chain[i].children.empty()) continue;
-            Path p;
-            for(int j=i;j>=0;j=chain[j].parent) p.push_back({chain[j].cell,chain[j].in,chain[j].out});
-            if(p.size()<3) continue;
-            std::reverse(p.begin(),p.end()); result.push_back(std::move(p));
-        }
-        return result;
+        return std::nullopt;
     }
     Targets loopTargets(const Path& p) const {
         Targets t;
@@ -151,51 +211,11 @@ struct Search {
         if(h.deductions.empty()) return std::nullopt;
         return h;
     }
-    std::optional<Hint> process(const std::vector<Path>& all) const {
-        for(const auto& p:all) {
-            for(int i=static_cast<int>(p.size())-1;i>3;i-=2) {
-                int a=p[0].cell,c=p[i].cell,v=p[0].in;
-                if(p[i].in!=v || !sees(a,c)) continue;
-                if(!(b.cells[a].candidates & b.cells[c].candidates)) continue;
-                Path prefix(p.begin(),p.begin()+i+1);
-                auto t=loopTargets(prefix);
-                if(!t.empty()) if(auto h=make("aicIloop",prefix,t)) return h;
-            }
-            for(int i=static_cast<int>(p.size())-1;i>3;i-=2) {
-                int a=p[0].cell,c=p[i].cell,v=p[0].in,w=p[i].in;
-                if(v==w||!sees(a,c)) continue;
-                Targets t;
-                if(has(b,a,w)) t.push_back({{a},{w}});
-                if(has(b,c,v)) t.push_back({{c},{v}});
-                if(!t.empty()) {
-                    Path prefix(p.begin(),p.begin()+i+1);
-                    if(auto h=make("aicII",prefix,t)) return h;
-                }
-            }
-        }
-        for(const auto& p:all) for(int i=static_cast<int>(p.size())-1;i>3;i-=2) {
-            int a=p[0].cell,c=p[i].cell,v=p[0].in;
-            if(p[i].in!=v||sees(a,c)) continue;
-            Targets t;
-            int corner0=Rows[cellRow(a)][cellCol(c)];
-            int corner1=Rows[cellRow(c)][cellCol(a)];
-            std::vector<int> corners;
-            if(has(b,corner0,v)) corners.push_back(corner0);
-            if(has(b,corner1,v)) corners.push_back(corner1);
-            if(!corners.empty()) {
-                t.push_back({corners,{v}});
-                Path prefix(p.begin(),p.begin()+i+1);
-                if(auto h=make("aicI",prefix,t)) return h;
-            }
-        }
-        return std::nullopt;
-    }
     std::optional<Hint> run(int a,Digits ac,int v,int bcell,Digits bc,int w,int out) {
-        chain.clear();
+        chain.clear(); exhausted=false;
         append({a,v,0,-1,'x',std::move(ac),{}});
         int ix=append({bcell,w,out,0,'s',std::move(bc),{}});
-        next(ix);
-        return process(paths());
+        return next(ix,1);
     }
     std::optional<Hint> find() {
         for(const auto& bv:bivals) {
@@ -210,5 +230,5 @@ struct Search {
     }
 };
 } // namespace
-std::optional<Hint> aic(const Board& board) { return Search(board).find(); }
+std::optional<Hint> loops(const Board& board) { return Search(board).find(); }
 } // namespace sudoku::techniques

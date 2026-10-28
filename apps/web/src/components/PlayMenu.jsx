@@ -3,6 +3,7 @@ import { cellStore, useCellActions, useGameStateStore } from "@sudoku/common/sto
 import { useHintStore } from "@sudoku/common/store/hintStore";
 import { doHints } from "@sudoku/common/hints/bothhints";
 import { validateMove, formatSolution } from "@sudoku/common/utilities/utilities";
+import { showHintStats } from "@sudoku/common/hints/hints";
 
 export default function PlayMenu() {
 	const { selectedValue, selectedCell, setSelectedValue, clearSelectedValue, clearSelectedCell, numbersUsed, setShowBivalue, setShowConjugates, resetState } = useGameStateStore();
@@ -12,10 +13,11 @@ export default function PlayMenu() {
 	const { updateCandidates, addNonCandidate } = useCellActions();
 	const { gameComplete, gameValid,  gameId } = cellStore();
 
-	const { hint, getHint, setHint, setHintMsg, resetHint } = useHintStore();
+	const { hint, getHint, setHint, setHintMsg, resetHint, getHintsRunning, setHintsRunning } = useHintStore();
 	const [message, setMessage] = useState(gameComplete ? "Game Complete" : null);
 
 	const selection = [1,2,3,4,5,6,7,8,9];
+	console.log("PlayMenu");
 
 	useEffect(() => {
 		console.log("PlayMenu UE");
@@ -41,6 +43,7 @@ export default function PlayMenu() {
 
 	async function doAllHints(e) {
 		e.preventDefault();
+		setHintsRunning(true);
 		console.log("doAllHints");
 		setHintMsg("Starting");
 		let h = doHints();
@@ -50,6 +53,7 @@ export default function PlayMenu() {
 			setHint(h);
 			processHint(h);
 			if (!validateGame()) break;
+			if (!getHintsRunning()) break;
 			await delay(200);
 			//h = runHints();
 			h = doHints();
@@ -62,6 +66,7 @@ export default function PlayMenu() {
 		if (!h) return;
 		console.log("doHint", h);
 		processHint(h);
+		//resetHint();
 	}
 
 	function processHint(h) {
@@ -108,7 +113,6 @@ export default function PlayMenu() {
 			setMessage("Invalid Board");
 			resetHint();
 		} else {
-			resetHint();
 			let solved = checkGameSolved();
 			if (solved === 0) {
 				//let h = runHints();
@@ -122,11 +126,11 @@ export default function PlayMenu() {
 				// solved ?
 				console.log("SOLVED");
 				//console.log(solutionLog);
-				//showHintStats();
-				//const stats = useHintStore.getState().getHintStats();
+				showHintStats();
+				const stats = useHintStore.getState().getHintStats();
 
-				//console.table(stats.functions);
-				//console.table(stats.types);
+				console.table(stats.functions);
+				console.table(stats.types);
 			}
 		}
 	}
@@ -158,6 +162,7 @@ export default function PlayMenu() {
 
 	function select(e,s) {
 		e.preventDefault();
+		setHintsRunning(false);
 		doSelect(s);
 		calcNumbersUsed();
 	}
@@ -165,12 +170,14 @@ export default function PlayMenu() {
 	function bivalue(e) {
 		e.preventDefault();
 		console.log("bivalue", selectedValue);
+		setHintsRunning(false);
 		setShowConjugates(false);
 		setShowBivalue(true);
 	}
 
 	function conjugates(e) {
 		e.preventDefault();
+		setHintsRunning(false);
 		console.log("conjugates", selectedValue);
 		setShowBivalue(false);
 		setShowConjugates(true);
@@ -181,6 +188,7 @@ export default function PlayMenu() {
 		// s: -1 - clear selected value
 		// s:  0 - if selectedCell
 		console.log("PMselect:", s, selectedCell);
+		setHintsRunning(false);
 		//console.log("forEach:", sel, s)
 		var msg = null;
 		if (s < 0) {
@@ -235,6 +243,7 @@ export default function PlayMenu() {
 
 	function handleSaveSolution(e) {
 		e.preventDefault();
+		setHintsRunning(false);
 		let filename = gameId + "_solution.txt";
 		let solution = formatSolution(gameId, solutionLog);
 		let file = new Blob([solution], {type: 'text/plain'});
@@ -252,6 +261,10 @@ export default function PlayMenu() {
 
 	function handleCopyStatistics(e) {
 		e.preventDefault();
+		setHintsRunning(false);
+		const history = useHintStore.getState().hintHistory;
+		console.log(history);
+		navigator.clipboard.writeText(JSON.stringify(history, null, 2));
 		//let hintStats = showHintStats();
 		//navigator.clipboard.writeText(JSON.stringify(hintStats, null, 2));
 	}
@@ -321,7 +334,7 @@ export default function PlayMenu() {
 					{message}
 				</div>
 				<div>
-				{gameComplete !== 0 && !gameValid &&
+					{(gameComplete === 0 || true) &&
 					<div>
 						<button
 							type="button"
@@ -338,7 +351,7 @@ export default function PlayMenu() {
 							Copy Statistics
 						</button>
 					</div>
-				}
+					}
 				</div>
 			</div>
 		</div>

@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
         "nakedPairs", "nakedTriples", "hiddenPairs", "hiddenTriples",
         "uniqueRectangles", "emptyRectangles", "xWing", "swordfish", "xyWing",
         "xyzWing", "wWing", "wxyzWing", "xChain", "xyChain", "colors",
-        "colorWing", "suedecoq", "aic", "forcing", "forcingChains", "biforce"
+        "colorWing", "suedecoq", "loops", "forcing", "forcingChains", "biforce"
     };
     for (const auto& name : names) {
         try {

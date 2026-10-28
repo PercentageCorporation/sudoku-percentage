@@ -5,6 +5,7 @@ logs
 build
 node_modules
 build-wasm
+build-loops
 
 # Editor directories and files
 .vscode/*

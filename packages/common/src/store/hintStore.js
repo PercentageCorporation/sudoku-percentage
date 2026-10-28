@@ -23,17 +23,44 @@ export const useHintStore = create(
 			},
 
 			hintHistory: [],
+			useCPP: true,
+			hintsRunning: false,
 
 			getHint: () => get().hint,
 
 			setHint: (h) => set({ hint: h }),
 
 			setHintMsg: (msg) => {
-				set({ hint: { ...get().hint, msg } });
+				console.log("msg", msg);
+				let h = get().hint;
+				h.msg = msg;
+				set({ hint: h });
 			},
 
 			resetHint: () => {
-				set({ hint: { ...Hint } });
+				set({
+					hint: { ...Hint },
+					hintsRunning: false
+				});
+			},
+
+			setUseCPP: () => {
+				set({ useCPP: true})
+			},
+
+			setUseJS: () => {
+				set({ useCPP: false})
+			},
+
+			setHintsRunning: (tf) => {
+				set({ hintsRunning: tf})
+			},
+
+			getHintsRunning: () => get().hintsRunning,
+
+			toggleUseCPP: () => {
+				let cpp = get().useCPP;
+				set({ useCPP: !cpp})
 			},
 
 			addHintHistory: (hint, elims) => {
@@ -50,7 +77,10 @@ export const useHintStore = create(
 			},
 
 			clearHintHistory: () => {
-				set({ hintHistory: [] });
+				set({
+					hintHistory: [],
+					hintsRunning: false
+				});
 			},
 
 			getHintHistory: () => get().hintHistory,
@@ -94,10 +124,18 @@ export const useHintStore = create(
 					}
 
 					functions[name] = s;
-
 					return {
 						hintStats: { functions, types }
 					};
+				});
+			},
+
+			setHintStats: (functions, types) => {
+				set({
+					hintStats: {
+						functions: functions,
+						types: types
+					}
 				});
 			},
 
@@ -107,7 +145,8 @@ export const useHintStore = create(
 						functions: {},
 						types: {}
 					},
-					hintHistory: []
+					hintHistory: [],
+					hintsRunning: false
 				});
 			},
 

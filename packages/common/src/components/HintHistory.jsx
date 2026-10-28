@@ -3,6 +3,7 @@ import { useHintStore } from "@sudoku/common/store/hintStore";
 
 export default function HintHistory() {
 	const history = useHintStore(s => s.hintHistory);
+	const { useCPP }= useHintStore();
 
 	const scrollRef = useRef(null);
 
@@ -17,7 +18,7 @@ export default function HintHistory() {
 	return (
 		<div className="ml-4 flex flex-col w-103 h-200 min-h-0">
 			<div className="h-7 w-full text-lg font-semibold bg-slate-200">
-				Hint History
+				{`Hint History ${useCPP ? 'for C++' : 'for JavaScript'}`}
 			</div>
 
 			<div className="flex-1 min-h-0">

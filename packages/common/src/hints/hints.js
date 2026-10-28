@@ -77,11 +77,13 @@ export function tryHint(name, fn) {
 	const start = performance.now();
 	const result = fn();
 
-	useHintStore.getState().logHint(
-		name,
-		result,
-		performance.now() - start
-	);
+	if (result !== null) {
+		useHintStore.getState().logHint(
+			name,
+			result,
+			performance.now() - start
+		);
+	}
 
 	return result?.[0] ?? null;
 }
@@ -149,7 +151,6 @@ export function runHints() {
 	//console.log("hints.js", cells.length)
 
 	let hint;
-	if (hint = tryHint("loops", loops)) return hint;
 
 	if (hint = tryHint("singletons", singletons)) return hint;
 	if (hint = tryHint("singleCounts", singleCounts)) return hint;

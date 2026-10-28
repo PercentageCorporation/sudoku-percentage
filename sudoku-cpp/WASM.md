@@ -56,7 +56,7 @@ The second argument to `getSudokuHint(boardJson, techniqueName)` can be `next`
 `nakedPairs`, `nakedTriples`, `hiddenPairs`, `hiddenTriples`,
 `uniqueRectangles`, `emptyRectangles`, `xWing`, `swordfish`, `xyWing`,
 `xyzWing`, `wWing`, `wxyzWing`, `xChain`, `xyChain`, `colors`, `colorWing`,
-`suedecoq`, `aic`, `forcing`, `forcingChains`, `biforce`.
+`suedecoq`, `loops`, `forcing`, `forcingChains`, `biforce`.
 
 `forcing` is an alias for `forcingChains`. A known technique returning no
 hint produces the JSON string `null`. Unknown names throw an exception.
@@ -73,3 +73,8 @@ cmake --build build-wasm --target sudoku_wasm -j
 ```
 
 Then deploy the rebuilt `sudoku.js` and `sudoku.wasm` together.
+
+## New link-based loops technique
+
+Call `JSON.parse(sudoku.getSudokuHint(JSON.stringify(board), "loops"))`.
+The `loops` implementation follows `loops(7).js` and returns `aicI`, `aicII`, or `aicIloop`. It replaces the older `aic` implementation. It limits recursive depth to 25 and the stored search tree to 10,000 links per start.

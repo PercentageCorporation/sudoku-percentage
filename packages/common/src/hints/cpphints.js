@@ -1,7 +1,16 @@
 import { cellStore } from "@sudoku/common/store/store";
+import { useHintStore } from "@sudoku/common/store/hintStore";
 import createSudokuModule from '@sudoku/common/wasm/sudoku.js';
 
 const sudoku = await createSudokuModule();
+
+export function resetCppHints() {
+	sudoku.resetHintStats();
+}
+
+export function getCppHints() {
+	return sudoku.getHintStats();
+}
 
 export function getCppHint() {
 	let hintcells = Array(81).fill(0);
@@ -21,6 +30,19 @@ export function getCppHint() {
 	const jresult = sudoku.getSudokuHint(jboard, 'next');
 	const result = JSON.parse(jresult);
 	console.log("result", result);
+
+	//const stats = JSON.parse(sudoku.getHintStats());
+	//console.table(stats.functions);
+	//console.table(stats.types);
+	//useHintStore.getState().setHintStats(stats.functions, stats.types);
+	// getNextSudokuHint();
+	// getHintStats();
+	// resetHintStats();
+
+// 	std::cout << solver.statistics().toJson() << '\n';
+// 	const auto& functions = solver.statistics().functions();
+// const auto& types = solver.statistics().types();
+
 	if (!result) return null;
 
 	let targets = [];
