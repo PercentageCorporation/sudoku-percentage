@@ -1,9 +1,11 @@
 import { RCS, Rows, Cols, Squares, cellRow, cellCol, cellSquare } from '@sudoku/common/utilities/constants';
+import { formatTargetlist } from '@sudoku/common/utilities/utilities';
+import { getConjugatePairs, getBivaluePairs, getBivalueList } from "./conjugates";
+import { findTargetlist, separateTargetlist, addToTargetlist, packTargetlist } from './hints';
 import { findTargets, includesAll, includesAny } from './hints';
 import { hintcells, hintcandidates, findSeenTargets2, findTargetsSeenByAll } from './hints';
 import { sameRow2, sameCol2, sameSq2, inSameSquare } from './hints';
 import { canSeeEachOther, getValuesInCommon, getActiveCandidates, getAllValues } from './hints';
-import { getConjugatePairs, getBivaluePairs, getBivalueList } from "./conjugates";
 
 
 //*****************************************************************************
@@ -129,8 +131,8 @@ export function XWing() {
 
 				// check the columns for possible targets
 				//console.log(Cols[cellCol[r0c0]], Cols[cellCol[r0c1]]);
-				var t0 = findTargets(Cols[cellCol[r0c0]], [value], [r0c0,r1c0]);
-				var t1 = findTargets(Cols[cellCol[r0c1]], [value], [r0c1,r1c1]);
+				var t0 = findTargetlist(Cols[cellCol[r0c0]], [value], [r0c0,r1c0]);
+				var t1 = findTargetlist(Cols[cellCol[r0c1]], [value], [r0c1,r1c1]);
 				//console.log("targets", value, r0c0, r0c1, r1c0, r1c1, t0, t1)
 				var tgts = [];
 				if (t0) tgts = tgts.concat(t0);
@@ -165,8 +167,8 @@ export function XWing() {
 					if (sameSq2(c0r0, c1r0) >= 0) continue;
 
 					// check the rows for possible targets
-					var t0 = findTargets(Rows[cellRow[c0r0]], [value], [c0r0,c1r0]);
-					var t1 = findTargets(Rows[cellRow[c0r1]], [value], [c0r1,c1r1]);
+					var t0 = findTargetlist(Rows[cellRow[c0r0]], [value], [c0r0,c1r0]);
+					var t1 = findTargetlist(Rows[cellRow[c0r1]], [value], [c0r1,c1r1]);
 					var tgts = [];
 					if (t0) tgts = tgts.concat(t0);
 					if (t1) tgts = tgts.concat(t1);
@@ -192,15 +194,19 @@ export function XWing() {
 		var cls = f[1];
 		var tgts = f[2]
 		//console.log("has", targets, r0, r1, c0, c1, xwcells);
+		let targetlist = packTargetlist(tgts);
+		let {targets, values} = separateTargetlist(targetlist);
+		let msg = "X-Wing: " + formatTargetlist(targetlist);
+
 		var xw = {
 			type: 'xWing',
 			rows: null,
 			cols: null,
 			square: null,
 			cells: cls,
-			values: [val],
-			targets: tgts,
-			msg: `XWing Cells: ${cls}, Value: ${val}`
+			values: values,
+			targets: targets,
+			msg: msg
 		}
 		xwings.push(xw);
 
@@ -372,7 +378,7 @@ export function XYZWing() {
 				var vals = getValuesInCommon(w1ac, w2ac);
 				var val = vals[0];
 				// the targets are the cells in the pivot square with the same row/col as wing2
-				var targets = [];
+				var targetlist = [];
 				for (var i=0; i<9; ++i) {
 					var tix = sqcells[i];
 					if (tix == pix) continue;	// skip the pivot cell
@@ -385,21 +391,25 @@ export function XYZWing() {
 					var tac = hintcandidates[tix];
 					if (tac.includes(val)) {
 						//console.log("found target", tix, tac);
-						targets.push(tix);
+						targetlist = addToTargetlist(targetlist, tix, val);
 						break;
 					}
 				}
 
-				if (targets.length > 0) {
+				if (targetlist.length > 0) {
+					targetlist = packTargetlist(targetlist);
+					let {targets, values} = separateTargetlist(targetlist);
+					let msg = "XYZ-Wing: " + formatTargetlist(targetlist);
+
 					var h = {
 						type: 'xyzWing',
 						row: null,
 						col: null,
 						square: null,
 						cells: cls,
-						values: [val],
+						values: values,
 						targets: targets,
-						msg: `XYZ-Wing: Cells: ${targets}, Value: ${val}`
+						msg: msg
 					}
 					xyzHints.push(h);
 					return xyzHints;

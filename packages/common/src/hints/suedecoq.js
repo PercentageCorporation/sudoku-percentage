@@ -1,6 +1,7 @@
 import { Rows, Cols, Squares, RCS } from '@sudoku/common/utilities/constants';
-import { hintcells, hintcandidates } from './hints';
-import { findTargets, findTargetsInHouses, includesAll, includesAny, sameRow2, sameCol2, sameRow3, sameCol3 } from './hints';
+import { formatTargetlist } from '@sudoku/common/utilities/utilities';
+import { hintcells, hintcandidates, packTargetlist } from './hints';
+import { findTargetlist, separateTargetlist, findTargetsInHouses, includesAll, includesAny, sameRow2, sameCol2, sameRow3, sameCol3 } from './hints';
 import { getBivaluePairs } from "./conjugates";
 
 //*****************************************************************************
@@ -114,24 +115,25 @@ function suedecoqII() {
 
 					//console.log("tgts", tgtss, xc0, tgtsrc, xc1);
 					if (tgtss || tgtsrc) {
-						let targets = tgtss ? [...tgtss] : [];
-						if (tgtsrc) targets = [...targets, ...tgtsrc];
-						let values = allac;
 						let targetlist = [];
 						if (tgtss) targetlist.push([tgtss, xc0]);
 						if (tgtsrc) targetlist.push([tgtsrc, xc1]);
+						targetlist = packTargetlist(targetlist);
+						let {targets, values} = separateTargetlist(targetlist);
+						let msg = "SuedeCoq II: " + formatTargetlist(targetlist);
+
 
 						let h = {
 							type: 'sdc',
 							rows: null,
 							cols: null,
 							square: null,
-							cells0: [cixi, cixj, cixk],
-							cells1: [bpix, cix],
+							cells1: [cixi, cixj, cixk],
+							cells2: [bpix, cix],
 							values: values,
 							targets: targets,
 							targetlist: targetlist,
-							msg: `SuedeCoq II: Cells: ${targets}, Value: ${values}`
+							msg: msg
 						}
 						return [h];
 					}
@@ -251,32 +253,30 @@ function suedecoqI() {
 					//console.log("CLOSER1", cixi, cixj, cixk, cix, sqcells, stvals, acx);
 
 					// look for cells in the square containing any of the square  candidates
-					let tgtss = findTargets(sqarr, stvals, sqcells)
+					let tgtss = findTargetlist(sqarr, stvals, sqcells)
 					// look for cells in the row/col containing any of the rc candidates
 					sqcells.push(cix);
-					let tgtsrc = findTargets(rcarr, acx, sqcells)
+					let tgtsrc = findTargetlist(rcarr, acx, sqcells)
 
 					//console.log("TARGETS1", tgtss, stvals, tgtsrc, acx, wcells);
 					if (!tgtss && !tgtsrc) continue;
 
-					let targets = tgtss ? [...tgtss] : [];
-					if (tgtsrc) targets = [...targets, ...tgtsrc];
-					let values = allc;
-					let targetlist = [];
-					if (tgtss) targetlist.push([tgtss, stvals]);
-					if (tgtsrc) targetlist.push([tgtsrc, acx]);
+					let targetlist = tgtss ? [...tgtss] : [];
+					if (tgtsrc) targetlist = [...targetlist, ...tgtsrc];
+					let {targets, values} = separateTargetlist(targetlist);
+					let msg = "SuedeCoq I: " + formatTargetlist(targetlist);
 
 					let h = {
 						type: 'sdc',
 						rows: null,
 						cols: null,
 						square: null,
-						cells0: [cixi, cixj],
-						cells1: wcells,
+						cells1: [cixi, cixj],
+						cells2: wcells,
 						values: values,
 						targets: targets,
 						targetlist: targetlist,
-						msg: `SuedeCoq I: Cells: ${targets}, Value: ${values}`
+						msg: msg
 					}
 					return [h];
 

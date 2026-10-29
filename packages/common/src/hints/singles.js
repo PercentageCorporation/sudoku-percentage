@@ -53,7 +53,7 @@ export function singleCounts() {
 		if (hassv) {
 			hassv.type = 'cellR';
 			hassv.row = i;
-			hassv.msg = `Single: Row: ${i+1}, Target: ${hassv.targetcells} : ${hassv.values}`
+			hassv.msg = `Single: Row: ${i+1}, [${hassv.targetcells}] : [${hassv.values}]`
 			singleCounts.push(hassv)
 			break;
 		}
@@ -61,7 +61,7 @@ export function singleCounts() {
 		if (hassv) {
 			hassv.type = 'cellC';
 			hassv.col = i;
-			hassv.msg = `Single: Column: ${i+1},  Target: ${hassv.targetcells} : ${hassv.values}`
+			hassv.msg = `Single: Column: ${i+1}, [${hassv.targetcells}] : [${hassv.values}]`
 			singleCounts.push(hassv)
 			break;
 		}
@@ -69,7 +69,7 @@ export function singleCounts() {
 		if (hassv) {
 			hassv.type = 'cellS';
 			hassv.square = i;
-			hassv.msg = `Single: Square: ${i+1}, Target: ${hassv.targetcells} : ${hassv.values}`
+			hassv.msg = `Single: Square: ${i+1}, [${hassv.targetcells}] : [${hassv.values}]`
 			singleCounts.push(hassv)
 			break;
 		}
@@ -97,7 +97,7 @@ export function singletons() {
 				square: cellSquare[cix],
 				targetcells: [cix],
 				values: ac,
-				msg: `Single:  Target: ${cix} : ${ac[0]}`
+				msg: `Single:  [${cix}] : [${ac[0]}]`
 			}
 			singletons.push(s);
 			break;

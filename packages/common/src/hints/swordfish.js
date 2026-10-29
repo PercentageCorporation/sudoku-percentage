@@ -1,5 +1,6 @@
 import { Rows, Cols } from '@sudoku/common/utilities/constants';
-import { findTargets, cellHasCandidate } from './hints';
+import { formatTargetlist } from '@sudoku/common/utilities/utilities';
+import { findTargetlist, packTargetlist, cellHasCandidate, separateTargetlist } from './hints';
 import { rCounts23, cCounts23 } from './hints';
 
 
@@ -110,6 +111,8 @@ export function swordfish() {
 						var rc23j = rCounts23[v][j];
 						var rc23k = rCounts23[v][k];
 						var cicr = columnsInCommon23(rc23i,rc23j,rc23k, v);
+						// cicr[0] - array of cells in common in each row
+						// cicr[1] - rows with cells in common
 						if (cicr) {
 							if (cicr[0].length !== 3) continue;
 							if (cicr[1].length > 3) continue;
@@ -131,6 +134,8 @@ export function swordfish() {
 						var cc23j = cCounts23[v][j];
 						var cc23k = cCounts23[v][k];
 						var cicc = rowsInCommon23(cc23i,cc23j,cc23k, v);
+						// cicc[0] - array of cells in common in each col
+						// cicc[1] - cols with cells in common
 						if (cicc) {
 							//console.log("cicc", v, [cc23i, cc23j, cc23k], cicc[1], cicc[0]);
 							if (cicc[0].length !== 3) continue;
@@ -147,6 +152,7 @@ export function swordfish() {
 
 	// look for row targets
 	for (const crx of cr) {
+		// crx: value, [cells in each row], rows, [array of cells in common]
 		//console.log("crx", crx);
 		var val = crx[0];
 		var rows = crx[1];	// row indices
@@ -155,12 +161,12 @@ export function swordfish() {
 		// find targets in the three columns
 		var tgts = [];
 		for (var i=0; i<3; ++i) {
-			var t = findTargets(Cols[cols[i]], [val], ccls[i]);
+			var t = findTargetlist(Cols[cols[i]], [val], ccls[i]);
 			if (t) tgts.push(...t);
 		}
 		//console.log("cicrT", tgts);
 		if (tgts.length > 0) {
-			sfcandidates.push([val, rows, cols, ccls, tgts ])
+			sfcandidates.push(['r', val, rows, cols, ccls, tgts ])
 			break;
 		}
 	}
@@ -168,6 +174,7 @@ export function swordfish() {
 	// look for column targets
 	if (sfcandidates.length === 0)
 		for (const ccx of cc) {
+			// ccx: value, [cells in each col], cols, [array of cells in common]
 			//console.log("ccx", ccx);
 			var val = ccx[0];
 			var cols = ccx[1];	// col indices
@@ -176,12 +183,12 @@ export function swordfish() {
 			// find targets in the three rows
 			var tgts = [];
 			for (var i=0; i<3; ++i) {
-				var t = findTargets(Rows[rows[i]], [val], rcls[i]);
+				var t = findTargetlist(Rows[rows[i]], [val], rcls[i]);
 				if (t) tgts.push(...t);
 			}
 			//console.log("ciccT", tgts);
 			if (tgts.length > 0) {
-				sfcandidates.push([val, rows, cols, rcls, tgts ])
+				sfcandidates.push(['c', val, rows, cols, rcls, tgts ])
 				break;
 			}
 		}
@@ -192,23 +199,28 @@ export function swordfish() {
 
 	sfcandidates.forEach((sfc) => {
 		//console.log("sfc", sfc)
-		//var dir = sfc[0];
-		var val = sfc[0];
-		var rows = sfc[1];
-		var cols = sfc[2];
-		var cls = sfc[3];
-		var tgts = sfc[4]
+		var dir = sfc[0];
+		var val = sfc[1];
+		var rows = sfc[2];
+		var cols = sfc[3];
+		var cls = sfc[4];
+		var tgts = sfc[5]
 		//console.log(dir,trc0,cls)
+		let cells = [];
+		cls.forEach(p => p.forEach(c => cells.push(c)));
+
+		let targetlist = packTargetlist(tgts);
+		let {targets, values} = separateTargetlist(targetlist);
+		let msg = "Swordfish: " + formatTargetlist(targetlist);
 
 		var h = {
 			type: 'swordfish',
-			rows: rows,
-			cols: cols,
+			cells: cells,
 			square: null,
-			cells: cls,
-			values: [val],
-			targets: tgts,
-			msg: `Swordfish: Cells: ${tgts}, Value: ${val}`
+			cells: cells,
+			values: values,
+			targets: targets,
+			msg: msg
 		}
 		swordfish.push(h);
 	})

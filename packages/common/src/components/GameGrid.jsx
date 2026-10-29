@@ -1,7 +1,7 @@
 import "@sudoku/common/styles/borders.css";
 import { cellStore, useCellActions, useGameStateStore } from "@sudoku/common/store/store";
 import { useHintStore } from "@sudoku/common/store/hintStore";
-import { RCS, bstyles } from "@sudoku/common/utilities/constants";
+import { Rows, Cols, RCS, bstyles } from "@sudoku/common/utilities/constants";
 import { getRemainingValues } from "@sudoku/common/utilities/utilities";
 import { cellInConjugatePair, cellInBivaluePair } from '@sudoku/common/hints/conjugates';
 import CandidatesModal from "@sudoku/common/components/CandidatesModal";
@@ -120,18 +120,26 @@ function Cell({ix}) {
 				selMode = 1;
 		}
 	} else if (hint !== null) {
-		if (hint.cells0 && hint.cells0.includes(ix))
-			selMode = 8;
-		else if (hint.cells1 && hint.cells1.includes(ix))
-			selMode = 9;
-		else if (hint.cells1 && hint.cells1.includes(ix))
-			selMode = 10;
-		else if (hint.targetcells && hint.targetcells[0] === ix)
-			selMode = 3;
-		else if (hint.targets && hint.targets.includes(ix))
+		if (hint.targets && hint.targets.includes(ix))
 			selMode = 3;
 		else if (hint.cells && hint.cells.includes(ix))
 			selMode = 12;
+		else if (hint.targets && hint.targets.includes(ix))
+			selMode = 3;
+		else if (hint.cells1 || hint.cells2) {
+			if (hint.cells1 && hint.cells1.includes(ix)) selMode = 9;
+			if (hint.cells2 && hint.cells2.includes(ix)) selMode = 10;
+		}
+		else if (hint.cells2 && hint.cells2.includes(ix))
+			selMode = 10;
+// 		else if (hint.rows || hint.cols) {
+// 			for (const r of hint.rows) {
+// 				if (Rows[r].includes(ix)) selMode = 9;
+// 			}
+// 			for (const c of hint.cols) {
+// 				if (Cols[c].includes(ix)) selMode = 10;
+// 			}
+// 		}
 
 	}
 
