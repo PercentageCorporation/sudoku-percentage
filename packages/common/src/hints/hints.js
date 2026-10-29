@@ -376,6 +376,7 @@ export function findTargetlist(arr,vals,ex) {
 		}
 	}
 	if (targetslist.length === 0) return null;
+	targetslist = packTargetlist(targetslist);
 	return targetslist;
 }
 

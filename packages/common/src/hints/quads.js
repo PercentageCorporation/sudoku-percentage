@@ -1,5 +1,7 @@
 import { Rows, Cols, Squares } from '@sudoku/common/utilities/constants';
-import { findTargets, getActiveCandidates } from './hints';
+import { formatTargetlist } from '@sudoku/common/utilities/utilities';
+import { findTargetlist, separateTargetlist } from './hints';
+import { hintcells, hintcandidates } from './hints';
 
 //*****************************************************************************
 
@@ -22,7 +24,7 @@ function findQuads(arr) {
 	let count = 0;
 	for (let i=0; i<9; ++i) {
 		let cix = arr[i];
-		let ac = getActiveCandidates(cix);
+		let ac = hintcandidates[cix];
 		if (ac.length > 1) {
 			hcells.push([i, cix, ac])
 			++count;
@@ -49,7 +51,7 @@ function findQuads(arr) {
 					let qcells = [hci[1],hcj[1],hck[1],hcl[1]];
 
 					if (qvals.length === 4) {
-						let tgts = findTargets(arr, qvals, qcells);
+						let tgts = findTargetlist(arr, qvals, qcells);
 						if (tgts) {
 							//console.log(tgts);
 							quads.push([qvals,qcells,tgts]);
@@ -99,9 +101,10 @@ export function quads() {
 }
 
 function quadHint(q) {
-	let vals = q[0];
 	let cls = q[1];
-	let tgts = q[2];
+	let tgtlist = q[2];
+	let {targets, values} = separateTargetlist(tgtlist);
+	let msg = "Quad: " + formatTargetlist(tgtlist);
 
 	var h = {
 		type: 'quad',
@@ -109,9 +112,9 @@ function quadHint(q) {
 		col: null,
 		square: null,
 		cells: cls,
-		values: vals,
-		targets: tgts,
-		msg: `Quad: Cells: ${tgts}, Value: ${vals}`
+		values: values,
+		targets: targets,
+		msg: msg
 	}
 	return h;
 }

@@ -431,7 +431,7 @@ export function lockedCandidates2() {
 			// for each cell in the row
 			let valcount = 0;
 			for (let c=0; c<9; ++c) {
-				let cix = row[c];	// cell index in square
+				let cix = row[c];	// cell index in row
 				if (hintcells[cix] > 0) continue;
 				if (hintcandidates[cix].includes(value)) {
 					let sq = cellSquare[cix];
@@ -445,32 +445,26 @@ export function lockedCandidates2() {
 			let sqix = hasSingleOccurance(sqCounts);
 			// sqix only occurs in one square, therefore it is a candidate for a locked candidate
 			if (sqix !== null) {
-				let vc = sqCounts[sqix];	// number of times value occurs in the square in the row
-				//let targets = getSquareValueCells(value, sqix);	// get the cells that the value is in
-				let targetlist = findTargetlist(Squares[sqix], [value], []);	// get the cells that the value is in
-				let vscount = targetlist.length;
-				//console.log("sqix",value, r, sqix, vc, pcells, sqCounts);
-				if (vscount > vc) {
-					//let cels = sqCells[sqix];
-					//targets = targets.filter(c => !cels.includes(c));
-					if (targetlist.length > 0) {
-						let {targets, values} = separateTargetlist(targetlist);
-						let msg = "Locked 2R: " + formatTargetlist(targetlist);
-						let ppsh = {
-							type: "locked2",
-							direction: "row",
-							row: r,
-							col: null,
-							square: sqix,
-							cells: cels,
-							targetlist: targetlist,
-							values: values,
-							targets: targets,
-							msg: msg
-						};
-						ppsHints.push(ppsh);
-						return ppsHints;
-					}
+				// find targets in square not in the row
+				let targetlist = findTargetlist(Squares[sqix], [value], Rows[r]);	// get the cells that the value is in
+				if (targetlist) {
+					let cels = sqCells[sqix];
+					let {targets, values} = separateTargetlist(targetlist);
+					let msg = "Locked 2R: " + formatTargetlist(targetlist);
+					let ppsh = {
+						type: "locked2",
+						direction: "row",
+						row: r,
+						col: null,
+						square: sqix,
+						cells: cels,
+						targetlist: targetlist,
+						values: values,
+						targets: targets,
+						msg: msg
+					};
+					ppsHints.push(ppsh);
+					return ppsHints;
 				}
 				continue;
 			}
@@ -481,10 +475,10 @@ export function lockedCandidates2() {
 			let col = Cols[cx];
 			let sqCounts = [0,0,0,0,0,0,0,0,0];
 			let sqCells = [[],[],[],[],[],[],[],[],[]];
-			// for each cell in the row
+			// for each cell in the column
 			let valcount = 0;
 			for (let c=0; c<9; ++c) {
-				let cix = col[c];	// cell index in square
+				let cix = col[c];	// cell index in column
 				if (hintcells[cix] > 0) continue;
 				if (hintcandidates[cix].includes(value)) {
 					let sq = cellSquare[cix];
@@ -498,29 +492,25 @@ export function lockedCandidates2() {
 			let sqix = hasSingleOccurance(sqCounts);
 			//console.log(sqix, sqCounts);
 			if (sqix !== null) {
-				let vc = sqCounts[sqix];
-				//let targets = getSquareValueCells(value, sqix);	// get the cells that the value is in
-				let targetlist = findTargetlist(Squares[sqix], [value], []);	// get the cells that the value is in
-				let vscount = targetlist.length;
-				if (vscount > vc) {
-					//console.log("ppsc", value, cx, sqix, vc, vscount, targets, sqCounts);
-					if (targetlist.length > 0) {
-						let {targets, values} = separateTargetlist(targetlist);
-						let msg = "Locked 2C: " + formatTargetlist(targetlist);
-						let ppsh = {
-							type: "locked2",
-							direction: "col",
-							row: null,
-							col: cx,
-							square: sqix,
-							cells: cels,
-							values: values,
-							targets: targets,
-							msg: msg
-						};
-						ppsHints.push(ppsh);
-						return ppsHints;
-					}
+				// find targets in square not in column
+				let targetlist = findTargetlist(Squares[sqix], [value], Cols[cx]);	// get the cells that the value is in
+				if (targetlist) {
+					let cels = sqCells[sqix];
+					let {targets, values} = separateTargetlist(targetlist);
+					let msg = "Locked 2C: " + formatTargetlist(targetlist);
+					let ppsh = {
+						type: "locked2",
+						direction: "col",
+						row: null,
+						col: cx,
+						square: sqix,
+						cells: cels,
+						values: values,
+						targets: targets,
+						msg: msg
+					};
+					ppsHints.push(ppsh);
+					return ppsHints;
 				}
 				continue;
 			}

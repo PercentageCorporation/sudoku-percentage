@@ -53,7 +53,7 @@ export function singleCounts() {
 		if (hassv) {
 			hassv.type = 'cellR';
 			hassv.row = i;
-			hassv.msg = `Single: Row: ${i+1}, Cell: ${hassv.targetcells}, Value: ${hassv.values}`
+			hassv.msg = `Single: Row: ${i+1}, Target: ${hassv.targetcells} : ${hassv.values}`
 			singleCounts.push(hassv)
 			break;
 		}
@@ -61,7 +61,7 @@ export function singleCounts() {
 		if (hassv) {
 			hassv.type = 'cellC';
 			hassv.col = i;
-			hassv.msg = `Single: Column: ${i+1}, Cell: ${hassv.targetcells}, Value: ${hassv.values}`
+			hassv.msg = `Single: Column: ${i+1},  Target: ${hassv.targetcells} : ${hassv.values}`
 			singleCounts.push(hassv)
 			break;
 		}
@@ -69,7 +69,7 @@ export function singleCounts() {
 		if (hassv) {
 			hassv.type = 'cellS';
 			hassv.square = i;
-			hassv.msg = `Single: Square: ${i+1}, Cell: ${hassv.targetcells}, Value: ${hassv.values}`
+			hassv.msg = `Single: Square: ${i+1}, Target: ${hassv.targetcells} : ${hassv.values}`
 			singleCounts.push(hassv)
 			break;
 		}
@@ -86,18 +86,18 @@ export function singleCounts() {
 // returns an array of cells which only have one candidate
 export function singletons() {
 	var singletons = [];
-	for (var ix=0; ix<81; ++ix) {
-		if (hintcells[ix] === 0 && hintcandidates[ix].length === 1) {
-			let ac = hintcandidates[ix];
+	for (var cix=0; cix<81; ++cix) {
+		if (hintcells[cix] === 0 && hintcandidates[cix].length === 1) {
+			let ac = hintcandidates[cix];
 			//console.log("single:", ix, ac);
 			var s = {
 				type: 'cell',
-				row: cellRow[ix],
-				col: cellCol[ix],
-				square: cellSquare[ix],
-				targetcells: [ix],
+				row: cellRow[cix],
+				col: cellCol[cix],
+				square: cellSquare[cix],
+				targetcells: [cix],
 				values: ac,
-				msg: `Single: Cell: ${ix+1}, Value: ${ac}`
+				msg: `Single:  Target: ${cix} : ${ac[0]}`
 			}
 			singletons.push(s);
 			break;

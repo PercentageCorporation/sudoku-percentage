@@ -230,7 +230,7 @@ export function hiddenPairs() {
 			cols: rcs === 'c' ? rcs : null,
 			square: rcs === 's' ? rcs : null,
 			cells: cls,
-			findTargetlist: tgtlist,
+			targetlist: tgtlist,
 			values: values,
 			targets: targets,
 			msg: msg
