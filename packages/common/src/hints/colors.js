@@ -1,6 +1,7 @@
-import { canSeeEachOther } from './hints';
-import { findAllCellsWithValue, includesAll, includesAny, findTargetsSeenByBoth, findTargets } from './hints';
+import { canSeeEachOther, findTargetlist, findTargetlistSeenByBoth, separateTargetlist } from './hints';
+import { findAllCellsWithValue, includesAll, includesAny,  findTargets } from './hints';
 import { getConjugatePairs } from "./conjugates";
+import { formatTargetlist } from '../utilities/utilities';
 
 
 //*****************************************************************************
@@ -302,10 +303,11 @@ export function colorWing() {
 					var ccopj = getBipartiteCellsWithOppositeParity(bj, bcpj);
 
 					//console.log("ccop", bci, bcpi, ccopi, bcj, bcpj, ccopj);
-					var targets = findTargetsSeenByBoth(v, ccopi, ccopj);
+					var targets = findTargetlistSeenByBoth(v, ccopi, ccopj);
 					if (targets) {
 						console.log("targets 1", targets);
 						candidates.push([v, targets, parity1, parity2, parity3, parity4])
+						break;
 					}
 					// colors.push(???)
 				} else	{	// more than one bridge
@@ -317,13 +319,14 @@ export function colorWing() {
 						// therefore all cluster cells of that parity are elimination targets
 						var parity1 = getClusterCellsByParity(bi)[bp[0]]
 						var parity2 = getClusterCellsByParity(bi)[bp[0] === 0 ? 1 : 0]
-						targets = findTargets(parity1, [v], []);
+						targets = findTargetlist(parity1, [v], []);
 						if (targets) {
 							console.log("targets 2+", bp, targets);
 							candidates.push([v, targets, parity1, parity2, parity3, parity4])
+							break;
 						}
 					} else if (bp[1] !== -1 && bp[0] === -1) {
-						targets = findTargets(parity2, [v], []);
+						targets = findTargetlist(parity2, [v], []);
 					}
 
 				}
@@ -335,11 +338,13 @@ export function colorWing() {
 
 	candidates.forEach((c) => {
 		var value = c[0];
-		var tgts = c[1];
+		var targetlist = c[1];
 		var p1 = c[2];
 		var p2 = c[3];
 		var p3 = c[4];
 		var p4 = c[5];
+		let {targets, values} = separateTargetlist(targetlist);
+		let msg = "Color Wing: " + formatTargetlist(targetlist);
 
 		var h = {
 			type: 'colorWing',
@@ -353,9 +358,9 @@ export function colorWing() {
 			parity2: p2,
 			parity3: p3,
 			parity4: p4,
-			values: [value],
-			targets: tgts,
-			msg: `Color Wing: Cells: ${tgts}, Value: ${value}`
+			values: values,
+			targets: targets,
+			msg: msg
 		}
 		colors.push(h);
 
@@ -438,6 +443,10 @@ export function colors() {
 				//console.log("Type II", value, red, redSame, blue, blueSame);
 				var cls = redSame ? red : blue;
 				var tgts = redSame ? blue : red;
+				let targetlist = [tgts,[value]];
+				let {targets, values} = separateTargetlist(targetlist);
+				let msg = "Colors II: " + formatTargetlist(targetlist);
+
 				//console.log(cls, tgts);
 				var h = {
 					type: 'colorsII',
@@ -447,9 +456,10 @@ export function colors() {
 					cells: cls,
 					cells0: red,
 					cells1: blue,
-					values: [value],
-					targets: tgts,
-					msg: `Colors II: Cells: ${tgts}, Value: ${value}`
+					targetlist: targetlist,
+					values: values,
+					targets: targets,
+					msg: msg
 				}
 				colors.push(h);
 				break;
@@ -469,6 +479,9 @@ export function colors() {
 			//console.log(value, tgts, red, blue, outliers);
 			if (tgts.length > 0) {
 				//console.log(value, tgts, red, blue, outliers);
+				let targetlist = [ [tgts, [value]] ];
+				let {targets, values} = separateTargetlist(targetlist);
+				let msg = "Colors I: " + formatTargetlist(targetlist);
 				var cls = [...red,...blue];
 				var h = {
 					type: 'colorsI',
@@ -478,9 +491,10 @@ export function colors() {
 					cells: cls,
 					cells0: red,
 					cells1: blue,
-					values: [value],
-					targets: tgts,
-					msg: `Colors I: Cells: ${tgts}, Value: ${value}`
+					targetlist: targetlist,
+					values: values,
+					targets: targets,
+					msg: msg
 				}
 				colors.push(h);
 				break;

@@ -1,11 +1,11 @@
 import { Rows, Cols, Squares, cellRow, cellCol, cellSquare, sqRows012, sqCols012, RCS } from '@sudoku/common/utilities/constants';
 import { formatTargetlist } from '@sudoku/common/utilities/utilities';
 import { getConjugatePairs, getBivaluePairs } from "./conjugates";
-import { findTargetlist, separateTargetlist, addToTargetlist, packTargetlist } from './hints';
+import { findTargetlist, separateTargetlist, addToTargetlist, packTargetlist, findSeenTargetlist2, findSeenTargetlist3 } from './hints';
 import { sameRow2, sameCol2 } from './hints';
 import { hintcells, hintcandidates, vSqs } from './hints';
 import { includesAll } from './hints';
-import { rcsContainsValue, findTargets, findSeenTargets2,  findSeenTargets3, findTargetsOnly } from './hints';
+import { rcsContainsValue, findTargetsOnly } from './hints';
 import { getActiveCandidates, getCandidateCells, findCandidatesWithValues, cellHasCandidate } from './hints';
 import { countTheHouse, checkForTripleCounts } from './triples';
 
@@ -483,18 +483,22 @@ export function uniqueRectangles() {
 			let val = oneextras[0];
 			let cx0 = extras[0];
 			let cx1 = extras[1];
-			tgts = findSeenTargets2(val, cx0, cx1);
+			let targetlist = findSeenTargetlist2(val, cx0, cx1);
+
 			//console.log(val, cx0, cx1, tgts);
-			if (tgts) {
+			if (targetlist) {
+				let {targets, values} = separateTargetlist(targetlist);
+				let msg = "UR Type 2: " + formatTargetlist(targetlist);
+
 				let h = {
 					type: 'urType2',
 					rows: null,
 					cols: null,
 					square: null,
 					cells: sqcells,
-					values: [val],
-					targets: tgts,
-					msg: `UR Type 2: Cells: ${tgts}, Value: ${val}`
+					values: values,
+					targets: targets,
+					msg: msg
 				}
 				rectangles.push(h);
 				return rectangles;
@@ -605,22 +609,24 @@ export function uniqueRectangles() {
 			let cx0 = extras[0];
 			let cx1 = extras[1];
 			if (oneextra === 2)
-				tgts = findSeenTargets2(val, cx0, cx1);
+				tgts = findSeenTargetlist2(val, cx0, cx1);
 			else {
 				let cx2 = extras[2];
-				tgts = findSeenTargets3(val, cx0, cx1, cx2);
+				tgts = findSeenTargetlist3(val, cx0, cx1, cx2);
 			}
 			//console.log(val, cx0, cx1, tgts);
 			if (tgts) {
+				let {targets, values} = separateTargetlist(tgts);
+				let msg = "UR Type 5: " + formatTargetlist(tgts);
 				let h = {
 					type: 'urType5',
 					rows: null,
 					cols: null,
 					square: null,
 					cells: sqcells,
-					values: [val],
-					targets: tgts,
-					msg: `UR Type 5: Cells: ${tgts}, Value: ${val}`
+					values: values,
+					targets: targets,
+					msg: msg
 				}
 				rectangles.push(h);
 				return rectangles;

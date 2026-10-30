@@ -149,7 +149,6 @@ export function runHints() {
 	//console.log("hints.js", cells.length)
 
 	let hint;
-	if (hint = tryHint("uniqueRectangles", uniqueRectangles)) return hint;
 
 	if (hint = tryHint("singletons", singletons)) return hint;
 	if (hint = tryHint("singleCounts", singleCounts)) return hint;
@@ -363,7 +362,7 @@ export function findTargets(arr,vals,ex) {
 }
 
 export function findTargetlist(arr,vals,ex) {
-	var targetslist = [];
+	var targetlist = [];
 	var alen = arr.length;
 	for (var i=0; i<alen; ++i) {
 		var cix = arr[i];
@@ -371,14 +370,107 @@ export function findTargetlist(arr,vals,ex) {
 		if (!ex.includes(cix)) {
 			for (const value of vals) {
 				if (hintcandidates[cix].includes(value)) {
-					addToTargetlist(targetslist,cix,value);
+					addToTargetlist(targetlist,cix,value);
 				}
 			}
 		}
 	}
-	if (targetslist.length === 0) return null;
-	targetslist = packTargetlist(targetslist);
-	return targetslist;
+	if (targetlist.length === 0) return null;
+	targetlist = packTargetlist(targetlist);
+	return targetlist;
+}
+
+// targets have to be in the same row/col or row/sq or col/sq
+export function findSeenTargetlist2(val, c1, c2) {
+	let targetlist = [];
+	for (var cix=0; cix<81; ++cix) {
+		if (!cellHasCandidate(cix, val)) continue;
+		if (cix === c1 || cix === c2) continue;
+		if (!canSeeEachOther( cix, c1)) continue;
+		if (!canSeeEachOther( cix, c2)) continue;
+		targetlist = addToTargetlist(targetlist, cix, val);
+	}
+	if (targetlist.length === 0) return null;
+	targetlist = packTargetlist(targetlist);
+	return targetlist;
+}
+
+// targets have to be in the same row/col or row/sq or col/sq
+export function findSeenTargetlist3(targetlist, val, c1, c2, c3) {
+	for (var cix=0; cix<81; ++cix) {
+		if (!cellHasCandidate(cix, val)) continue;
+		if (cix === c1 || i === c2 || cix === c3) continue;
+		if (!canSeeEachOther( cix, c1)) continue;
+		if (!canSeeEachOther( cix, c2)) continue;
+		if (!canSeeEachOther( cix, c3)) continue;
+		targetlist = addToTargetlist(targetlist, cix, val);
+	}
+	if (targetlist.length === 0) return null;
+	targetlist = packTargetlist(targetlist);
+	return targets;
+}
+
+// find all cells that can be seen by any combination of cls0 and cls1
+export function findTargetlistSeenByBoth(v, cls0, cls1) {
+	let targetlist = [];
+	for (var cix=0; cix<81; ++cix) {
+		cls0.forEach((c0) => {
+			if (canSeeEachOther(c0, cix)) {
+				cls1.forEach((c1) => {
+					if (canSeeEachOther(c1, cix)) {
+						if (hintcells[cix] === 0 && hintcandidates[cix].includes(v)) {
+							targetlist = addToTargetlist(targetlist, cix, v);
+						}
+					}
+				})
+			}
+		})
+	}
+	if (targetlist.length === 0) return null;
+	return targetlist;;
+}
+
+// find seen targets
+// targets have to be seen by all the cells in the list
+export function findTargetlistSeenByAll(val, cls, ex) {
+	let targetlist = [];
+	var clslen = cls.length;
+	for (var i=0; i<81; ++i) {
+		if (ex.includes(i)) continue;	// skip excluded cells
+		if (!cellHasCandidate(i, val)) continue;
+		var seenbyall = true;
+		for (var j=0; j<clslen; ++j) {
+			var cixj = cls[j];
+			if (!canSeeEachOther(i, cixj)) {
+				seenbyall = false;
+				break;
+			}
+		}
+		if (seenbyall) targetlist = addToTargetlist(targetlist, i, val);
+	}
+	if (targetlist.length === 0) return null;
+	return targetlist;
+}
+
+// find any values in the cells that are not in the vals list
+export function findInternalTargetlist(cls,vals) {
+	let targetlist = [];
+	var tgts = new Set();
+	var tgtvals = new Set();
+	for (const cix of cls) {
+		if (hintcells[cix] > 0) continue;
+		hintcandidates[cix].forEach((c) => {
+			if (!vals.includes(c)) {
+				addToTargetlist(targetlist, cix, c);
+				tgts.add(cix);
+				tgtvals.add(c);
+			}
+		})
+	}
+
+	return targetlist;
+	//if (tgts.size === 0) return null;
+	//return [Array.from(tgts).sort(),Array.from(tgtvals).sort()];
 }
 
 export function separateTargetlist(targetlist) {
@@ -427,45 +519,6 @@ export function findTargetsOnly(arr,vals,ex) {
 	}
 	if (targets.length === 0) return null;
 	return targets;
-}
-
-// find all cells that can be seen by any combination of cls0 and cls1
-export function findTargetsSeenByBoth(v, cls0, cls1) {
-	var cls = new Set();
-	for (var cix=0; cix<81; ++cix) {
-		cls0.forEach((c0) => {
-			if (canSeeEachOther(c0, cix)) {
-				cls1.forEach((c1) => {
-					if (canSeeEachOther(c1, cix)) {
-						if (hintcells[cix] === 0 && hintcandidates[cix].includes(v)) cls.add(cix);
-					}
-				})
-			}
-		})
-	}
-	if (cls.size === 0) return null;
-	return Array.from(cls);
-}
-
-// find any values in the cells that are not in the vals list
-export function findInternalTargetlist(cls,vals) {
-	let targetlist = [];
-	var tgts = new Set();
-	var tgtvals = new Set();
-	for (const cix of cls) {
-		if (hintcells[cix] > 0) continue;
-		hintcandidates[cix].forEach((c) => {
-			if (!vals.includes(c)) {
-				addToTargetlist(targetlist, cix, c);
-				tgts.add(cix);
-				tgtvals.add(c);
-			}
-		})
-	}
-
-	return targetlist;
-	//if (tgts.size === 0) return null;
-	//return [Array.from(tgts).sort(),Array.from(tgtvals).sort()];
 }
 
 // get all cells with candidates from array excluding cells in ex
@@ -582,35 +635,6 @@ export function findTargetsInHouses(vals, houses, ex) {
 	return targets;
 }
 
-
-// targets have to be in the same row/col or row/sq or col/sq
-export function findSeenTargets2(val, c1, c2) {
-	var targets = [];
-	for (var i=0; i<81; ++i) {
-		if (!cellHasCandidate(i, val)) continue;
-		if (i === c1 || i === c2) continue;
-		if (!canSeeEachOther( i, c1)) continue;
-		if (!canSeeEachOther( i, c2)) continue;
-		targets.push(i);
-	}
-	if (targets.length === 0) return null;
-	return targets;
-}
-
-// targets have to be in the same row/col or row/sq or col/sq
-export function findSeenTargets3(val, c1, c2, c3) {
-	var targets = [];
-	for (var i=0; i<81; ++i) {
-		if (!cellHasCandidate(i, val)) continue;
-		if (i === c1 || i === c2 || i === c3) continue;
-		if (!canSeeEachOther( i, c1)) continue;
-		if (!canSeeEachOther( i, c2)) continue;
-		if (!canSeeEachOther( i, c3)) continue;
-		targets.push(i);
-	}
-	if (targets.length === 0) return null;
-	return targets;
-}
 
 // find cells in the array which contain any of vals, excluding cells in ex
 export function rcsContainsValue(arr,val,ex) {

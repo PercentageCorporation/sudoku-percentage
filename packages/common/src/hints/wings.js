@@ -1,9 +1,9 @@
 import { RCS, Rows, Cols, Squares, cellRow, cellCol, cellSquare } from '@sudoku/common/utilities/constants';
 import { formatTargetlist } from '@sudoku/common/utilities/utilities';
 import { getConjugatePairs, getBivaluePairs, getBivalueList } from "./conjugates";
-import { findTargetlist, separateTargetlist, addToTargetlist, packTargetlist } from './hints';
-import { findTargets, includesAll, includesAny } from './hints';
-import { hintcells, hintcandidates, findSeenTargets2, findTargetsSeenByAll } from './hints';
+import { findTargetlist, separateTargetlist, addToTargetlist, packTargetlist, findTargetlistSeenByAll } from './hints';
+import { includesAll, includesAny } from './hints';
+import { hintcells, hintcandidates, findTargetsSeenByAll } from './hints';
 import { sameRow2, sameCol2, sameSq2, inSameSquare } from './hints';
 import { canSeeEachOther, getValuesInCommon, getActiveCandidates, getAllValues } from './hints';
 
@@ -287,10 +287,13 @@ export function XYWing() {
 				// I think we found one
 				//console.log("xy wings", pix, z, prow, pcol, psq, pac, pi, pj)
 				// get the intersecting cells
-				var tgts = findSeenTargets2(z, pi[0], pj[0]);
+				let targetlist = [];
+				targetlist = (targetlist, z, pi[0], pj[0]);
 
 				//console.log("xy tgts", z, cix0, cix1, killBill);
-				if (tgts) {
+				if (targetlist.length > 0) {
+					let {targets, values} = separateTargetlist(targetlist);
+					let msg = "XY-Wing: " + formatTargetlist(targetlist);
 					//console.log("found XY", wval, piv, rp, cp);
 					var cls = [pix,pi[0],pj[0]];
 					var h = {
@@ -299,9 +302,10 @@ export function XYWing() {
 						cols: null,
 						square: null,
 						cells: cls,
-						values: [z],
-						targets: tgts,
-						msg: `XY-Wing: Cells: ${tgts}, Value: ${z}`
+						targetlist: targetlist,
+						values: values,
+						targets: targets,
+						msg: msg
 					}
 					//console.log("hint", h);
 					xywings.push(h);
@@ -500,18 +504,18 @@ export function WWing() {
 			//console.log("epc", cpv, ep0, ep1, cpc0, cpc1);
 			if (canSeeEachOther(ep0, cpc0) && canSeeEachOther(ep1, cpc1)) {
 				// check for targets
-				let tgts = findTargetsSeenByAll(eptv, [ep0, ep1], wcells)
-				//console.log("ep match0", epv1, ep, cp, ep0, cpc0, cpc1, ep1, tgts);
-				if (tgts) {
-					ww.push([eptv,[ep0, cpc0, cpc1, ep1], tgts ]);
+				let targetlist = findTargetlistSeenByAll(eptv, [ep0, ep1], wcells)
+				//console.log("ep match0", epv1, ep, cp, ep0, cpc0, cpc1, ep1, targetlist);
+				if (targetlist) {
+					ww.push([eptv,[ep0, cpc0, cpc1, ep1], targetlist ]);
 					break;
 				}
 
 			} else if (canSeeEachOther(ep0, cpc1) && canSeeEachOther(ep1, cpc0)) {
-				let tgts = findTargetsSeenByAll(eptv, [ep0, ep1], wcells)
-				//console.log("ep match1", epv1, ep, cp, ep0, cpc1, cpc0, ep1, tgts);
-				if (tgts) {
-					ww.push([eptv, [ep0, cpc1, cpc0, ep1], tgts ]);
+				let targetlist = findTargetlistSeenByAll(eptv, [ep0, ep1], wcells)
+				//console.log("ep match1", epv1, ep, cp, ep0, cpc1, cpc0, ep1, targetlist);
+				if (targetlist) {
+					ww.push([eptv, [ep0, cpc1, cpc0, ep1], targetlist ]);
 					break;
 				}
 			}
@@ -523,7 +527,9 @@ export function WWing() {
 	ww.forEach((w) => {
 		let val = w[0];
 		let cls = w[1];
-		let targets = w[2];
+		let targetlist = w[2];
+		let {targets, values} = separateTargetlist(targetlist);
+		let msg = "W-Wing: " + formatTargetlist(targetlist);
 
 		let h = {
 			type: 'wWing',
@@ -531,9 +537,10 @@ export function WWing() {
 			col: null,
 			square: null,
 			cells: cls,
-			values: [val],
+			targetlist: targetlist,
+			values: values,
 			targets: targets,
-			msg: `W-Wing: Cells: ${targets}, Value: ${val}`
+			msg: msg
 		}
 		wwings.push(h);
 	})
@@ -605,8 +612,6 @@ function getHouseCells(arr, ex) {
 // look for wing2 cells in row or column of pivot
 // pivot: [wix, wac, pix, pac, common, uncommon]
 function findWing2RC(pivot) {
-	let wing2 = [];
-
 	let pix = pivot[2];
 	let pac = pivot[3];
 	let prcs = RCS[pix];
@@ -630,7 +635,7 @@ function findWing2RC(pivot) {
 	let hcellsrc = [hcellsr, hcellsc];
 	//console.log("hcells", hcellsr, hcellsc);
 
-	hcellsrc.forEach(hcells => {
+	for (const hcells of hcellsrc) {
 		//console.log("hcellsrc", pix, prow, pcol, hcells);
 		let hlen = hcells.length;
 		if (hlen < 2) return [];
@@ -683,16 +688,17 @@ function findWing2RC(pivot) {
 				if (acj.includes(Z)) Zcells.push(cixj);
 				let allcells = [pix, w1ix, cixi, cixj];
 
-				let tgts = findTargetsSeenByAll(Z, Zcells, allcells);
-				if (tgts) {
-					wing2.push([pix, w1ix, cixi, cixj, Z, tgts])
+				let targetlist = findTargetlistSeenByAll(Z, Zcells, allcells);
+				if (targetlist) {
+					let wing2 = [ [pix, w1ix, cixi, cixj, Z, targetlist] ];
 					//console.log("*****************");
-					//console.log(pix, w1ix, cixi, cixj, W, X, Y, Z, tgts);
+					//console.log(pix, w1ix, cixi, cixj, W, X, Y, Z, targetlist);
+					return wing2;
 				}
 			}
 		}
-	})
-	return wing2;
+	}
+	return [];
 }
 
 
@@ -709,7 +715,6 @@ export function WXYZWing() {
 	// for each conjugate pair start the chains with their endpoints
 	// bv: [ cix, [ac]]
 	let pivots;
-	let wing2;
 	let  bvlen = bivals.length;
 	for (let  bv=0; bv<bvlen; ++bv) {
 		let bc = bivals[bv];
@@ -726,7 +731,7 @@ export function WXYZWing() {
 		let plen = pivots.length;
 		for (let i=0; i<plen; i++) {
 			let p = pivots[i];
-			wing2 = findWing2RC(p);
+			let wing2 = findWing2RC(p);
 			if (wing2.length == 0) continue;
 			let h = wingHint(wing2[0]);
 			wxyzHints.push(h);
@@ -745,7 +750,9 @@ function wingHint(wing) {
 	let cells2 = [wing[2], wing[3]];
 	let cls = [...cells0, ...cells1, ...cells2];
 	let value = wing[4];
-	let tgts = wing[5];
+	let targetlist = wing[5];
+	let {targets, values} = separateTargetlist(targetlist);
+	let msg = "WXYZ-Wing: " + formatTargetlist(targetlist);
 
 	let h = {
 		type: 'wxyzWing',
@@ -756,9 +763,10 @@ function wingHint(wing) {
 		cells0: cells0,
 		cells1: cells1,
 		cells2: cells2,
-		values: [value],
-		targets: tgts,
-		msg: `WXYZ-Wing: Cells: ${tgts}, Value: ${value}`
+		targetlist: targetlist,
+		values: values,
+		targets: targets,
+		msg: msg
 	}
 
 	return h;

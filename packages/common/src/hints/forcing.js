@@ -1,6 +1,7 @@
 import { getBivaluePairs, getConjugatePairs } from './conjugates';
 import { Rows, Cols, Squares, cellRow, cellCol, cellSquare } from "@sudoku/common/utilities/constants";
-import { hintcells, hintcandidates } from './hints';
+import { hintcells, hintcandidates, separateTargetlist } from './hints';
+import { formatTargetlist } from '../utilities/utilities';
 
 let fccells = null;
 let fccandidates = null;
@@ -260,6 +261,9 @@ function updateCandidates(ix) {
 }
 
 function makeForcingHint(tgt, value) {
+	let targetlist = [ [[tgt],[value]] ];
+	let {targets, values} = separateTargetlist(targetlist);
+	let msg = "Forced: " + formatTargetlist(targetlist);
 	let h = {
 		type: 'forced',
 		rows: null,
@@ -268,9 +272,10 @@ function makeForcingHint(tgt, value) {
 		cells: [tgt],
 		parity1: null,
 		parity2: null,
-		values: [value],
-		targets: [tgt],
-		msg: `Forced: Cell: ${tgt}, Value: ${value}`
+		targetlist: targetlist,
+		values: values,
+		targets: targets,
+		msg: msg
 	}
 
 	return h;

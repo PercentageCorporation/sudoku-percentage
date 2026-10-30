@@ -1,8 +1,9 @@
 import { cellStore } from '@sudoku/common/store/store';
 import { RCS, Rows } from '@sudoku/common/utilities/constants';
-import { getCommonCandidates } from './hints';
+import { addToTargetlist, getCommonCandidates, packTargetlist, separateTargetlist } from './hints';
 import { canSeeEachOther, findTargetsSeenByAll, cellHasCandidate } from './hints';
 import { getConjugatePairs, getBivaluePairs, findCommonConjugatePairs, findSeenConjugatePairs, findSeenBivaluePairs } from "./conjugates";
+import { formatTargetlist } from '../utilities/utilities';
 
 //*****************************************************************************
 // common functions
@@ -11,34 +12,6 @@ let maxlevel = 0;
 let chain = [];
 let cpairs = [];
 let bivals = [];
-
-function findDuplicateLeaves(chain) {
-	const seen = new Map();
-	const duplicates = [];
-
-	for (let i = 0; i < chain.length; ++i) {
-		const link = chain[i];
-
-		// Only examine leaves
-		if (link[6].length !== 0) continue;
-
-		// Identify the logical state of the leaf
-		const key = JSON.stringify([
-			link[0],  // cell
-			link[2],  // candidate
-			link[3],  // alternate candidate
-			link[4]   // weak/strong
-		]);
-
-		if (seen.has(key)) {
-			duplicates.push([seen.get(key), i]);
-		} else {
-			seen.set(key, i);
-		}
-	}
-
-	return duplicates;
-}
 
 function alreadyLinked(clix, ep, value, type) {
 	return chain[clix][6].some(ix => {
@@ -142,16 +115,16 @@ function nextLink(clix, level) {
 			if (startval !== epval) {
 				// make sure the endpoints can see each other
 				if (canSeeEachOther(ep, startep)) {
-					let tgts = [];
+					let targetlist = [];
 					if (cellHasCandidate(ep, startval)) {
-						tgts.push([ep,startval]);
+						targetlist = addToTargetlist(targetlist, ep, startval);
 					}
 					if (cellHasCandidate(startep, epval)) {
-						tgts.push([startep,epval]);
+						targetlist = addToTargetlist(targetlist, startep, epval);
 					}
-					if (tgts.length > 0) {
+					if (targetlist.length > 0) {
 						let path = getCurrentPath(clix);
-						let aic2 = [startval, epval, startep, ep, tgts, path];
+						let aic2 = [startval, epval, startep, ep, targetlist, path];
 						let h = makeHint2(aic2);
 						//console.log(aic2);
 						//console.log(chain);
@@ -163,16 +136,16 @@ function nextLink(clix, level) {
 			// check for AIC I
 			if (startval === epval) {
 				let ep0 = chain[0][0];
-				// make sure the endpoints cannot see each other
+				// can the candidates see each other
 				if (canSeeEachOther(ep0, ep)) {
 					// check for AIC I Loop
 					let com = getCommonCandidates(ep0, ep);
 					if (com.length > 0) {
 						let path = getCurrentPath(clix);
-						let tgts = findLoopTargets(path);
-						//console.log("aic1loop", sval, sep, epi, tgts, apath);
-						if (tgts.length > 0) {
-							let aic1l = [startval, epval, startep, ep, tgts, path];
+						let targetlist = findLoopTargets(path);
+						//console.log("aic1loop", sval, sep, epi, targetlist, apath);
+						if (targetlist.length > 0) {
+							let aic1l = [startval, epval, startep, ep, targetlist, path];
 							let h = makeLoopHint(aic1l);
 							//console.log(aic1l);
 							//console.log(chain);
@@ -182,10 +155,10 @@ function nextLink(clix, level) {
 				} else {	// cannot see each other
 					// check for AIC I
 					let val = chain[0][2];
-					let tgts = findTargetsCorners(val, ep0, ep);
-					if (tgts.length > 0) {
+					let targetlist = findTargetsCorners(val, ep0, ep);
+					if (targetlist.length > 0) {
 						let path = getCurrentPath(clix);
-						let aic = [val, ep0, ep, tgts, path];
+						let aic = [val, ep0, ep, targetlist, path];
 						let h = makeHint(aic);
 						//console.log(aic);
 						//console.log(chain);
@@ -437,7 +410,7 @@ export function loops() {
 }
 
 function findLoopTargets(path) {
-	let targets = [];
+	let targetlist = [];
 	let plen = path.length;
 	for (let i=1; i<plen-1; i+=2) {
 		let pi = path[i];
@@ -456,7 +429,7 @@ function findLoopTargets(path) {
 		} else {
 			let tgts = findTargetsSeenByAll(val, cls, cls);
 			//console.log("tp", epi, epj, val, tgts)
-			if (tgts) targets.push([tgts,[val]]);
+			if (tgts) targetlist.push([tgts,[val]]);
 		}
 	}
 	// do the endpoints
@@ -466,22 +439,22 @@ function findLoopTargets(path) {
 	let cls = [eps, epe];
 	let tgts = findTargetsSeenByAll(val, cls, cls);
 	//console.log("tep", eps, epe, val, tgts)
-	if (tgts) targets.push([tgts,[val]]);
+	if (tgts) targetlist.push([tgts,[val]]);
 
-	return targets;
+	return targetlist;
 }
 
 function findTargetsCorners(val, c0, c1) {
-	let tgts = [];
+	let targetlist = [];
 	let rcs0 = RCS[c0];
 	let rcs1 = RCS[c1];
 	let t0 = Rows[rcs0[0]][rcs1[1]];
 	let t1 = Rows[rcs1[0]][rcs0[1]];
 	if (t0 === c0 || t0 === c1 || t1 === c0 || t1 === c1) return [];
 
-	if (cellHasCandidate(t0, val)) tgts.push(t0);
-	if (cellHasCandidate(t1, val)) tgts.push(t1);
-	return tgts;
+	if (cellHasCandidate(t0, val)) targetlist = addToTargetlist(targetlist, t0, val);
+	if (cellHasCandidate(t1, val)) targetlist = addToTargetlist(targetlist, t1, val);
+	return targetlist;
 }
 
 function makeHint(aic) {
@@ -489,7 +462,7 @@ function makeHint(aic) {
 	let val = aic[0];
 	let ep0 = aic[1];
 	let ep1 = aic[2];
-	let tgts = aic[3];
+	let tgtslist = aic[3];
 
 	let fullpath = [];
 	let parity1 = [];
@@ -505,10 +478,10 @@ function makeHint(aic) {
 		tf = !tf;
 	})
 
-	// if targets are in the chain I think something is wrong
-	//if (val === 2) continue; // TEST
-	//console.log("aic", fullpath);;
-	//console.log("path", p);
+	// get a list of the target cells
+	tgtslist = packTargetlist(tgtslist);
+	let {targets, values} = separateTargetlist(tgtslist);
+	let msg = "AIC I: " + formatTargetlist(tgtslist);
 
 	let h = {
 		type: 'aicI',
@@ -518,11 +491,10 @@ function makeHint(aic) {
 		cells: [ep0, ep1],
 		parity1: parity1,
 		parity2: parity2,
-		values: [val],
-		targets: tgts,
-		targetlist: null,
-		targetcells: null,
-		msg: `AIC I: Cells: ${tgts}, Value: ${val}`
+		values: values,
+		targets: targets,
+		targetlist: tgtslist,
+		msg: msg
 	}
 
 	return h;
@@ -533,7 +505,7 @@ function makeHint2(aic2) {
 	//console.log("aic2", aic2);
 	let ep0 = aic2[2];
 	let ep1 = aic2[3];
-	let targets = aic2[4];
+	let tgtslist = aic2[4];
 	let path = aic2[5];
 
 	// collect the alternating link cells and the full path
@@ -553,14 +525,8 @@ function makeHint2(aic2) {
 	})
 
 	// get a list of the target cells
-	let tgtslist = [];
-	let tgts = [];
-	let values = [];
-	targets.forEach(t => {
-		tgtslist.push([[t[0]],[t[1]]]);
-		tgts.push(t[0]);
-		values.push(t[1]);
-	})
+	let {targets, values} = separateTargetlist(tgtslist);
+	let msg = "AIC II: " + formatTargetlist(tgtslist);
 
 	let h = {
 		type: 'aicII',
@@ -571,10 +537,9 @@ function makeHint2(aic2) {
 		parity1: parity1,
 		parity2: parity2,
 		values: values,
-		targets: tgts,
+		targets: targets,
 		targetlist: tgtslist,
-		targetcells: null,
-		msg: `AIC II: Cells: ${tgts}, Value: ${values}`
+		msg: msg
 	}
 
 	return h;
@@ -605,14 +570,9 @@ function makeLoopHint(aic) {
 	})
 
 	// get a list of the target cells
-	let tgts = [];
-	tgtslist.forEach(t => tgts.push(...t[0]));
-	tgts.sort();
+	let {targets, values} = separateTargetlist(tgtslist);
+	let msg = "AIC I Loop: " + formatTargetlist(tgtslist);
 
-	let valset = new Set();
-	tgtslist.forEach(t => t[1].forEach(valset.add, valset));
-	let values = Array.from(valset);
-	values.sort();
 
 	let h = {
 		type: 'aicIloop',
@@ -623,10 +583,9 @@ function makeLoopHint(aic) {
 		parity1: parity1,
 		parity2: parity2,
 		targetlist: tgtslist,
-		targetcells: null,
-		targets: tgts,
+		targets: targets,
 		values: values,
-		msg: `AIC I Loop: Cells: ${tgts}, Value: ${values}`
+		msg: msg
 	}
 
 	//console.log("loophint", h);

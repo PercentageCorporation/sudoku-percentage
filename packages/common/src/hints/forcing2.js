@@ -1,5 +1,6 @@
 import { Rows, Cols, Squares, cellRow, cellCol, cellSquare, LinearToGrid } from "@sudoku/common/utilities/constants";
-import { hintcells, hintcandidates } from './hints';
+import { hintcells, hintcandidates, separateTargetlist } from './hints';
+import { formatTargetlist } from '../utilities/utilities';
 
 const INVALID = -1;
 const UNKNOWN = 0;
@@ -433,6 +434,10 @@ function makeForcingHint(determination) {
 	let cl = determination[3];
 	let lev = determination[4];
 	let conts = determination[5];
+	let targetlist = [ [[tgt],[value]] ];
+	let {targets, values} = separateTargetlist(targetlist);
+	let msg = "ForcedBV: " + formatTargetlist(targetlist);
+
 	let h = {
 		type: 'forced2',
 		rows: null,
@@ -444,9 +449,10 @@ function makeForcingHint(determination) {
 		levels: lev,
 		depth: cl,
 		contradictions: conts,
-		values: [value],
-		targets: [tgt],
-		msg: `ForcedBV: Cell: ${tgt}, Value: ${value}`
+		targetlist: targetlist,
+		values: values,
+		targets: targets,
+		msg: msg
 	}
 
 	return h;
@@ -458,19 +464,23 @@ function makeForcingHintSolved(determination) {
 	let cl = determination[3];
 	let lev = determination[4];
 	let conts = determination[5];
+	let targetlist = [ [[tgt],[value]] ];
+	let {targets, values} = separateTargetlist(targetlist);
+	let msg = "ForcedBVS: " + formatTargetlist(targetlist);
+
 	let h = {
 		type: 'forced2S',
 		rows: null,
 		cols: null,
 		square: null,
-		targetcells: [tgt],
+		targetcells: targets,
 		parity1: null,
 		parity2: null,
 		levels: lev,
 		depth: cl,
 		contradictions: conts,
-		values: [value],
-		msg: `ForcedBVS: Cell: ${tgt}, Value: ${value}`
+		values: values,
+		msg: msg
 	}
 
 	return h;

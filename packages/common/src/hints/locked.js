@@ -1,8 +1,9 @@
 import { Rows, Cols, Squares, cellSquare, RCS } from '@sudoku/common/utilities/constants';
-import { formatTargetlist } from '@sudoku/common/utilities/utilities';
-import { findTargets, findTargetlist, findTargetsSeenByAll, findTargetsInHouses, separateTargetlist, addToTargetlist, packTargetlist } from './hints';
+import { findTargets, findTargetsSeenByAll, findTargetsInHouses } from './hints';
+import { findTargetlist, findTargetlistSeenByAll, separateTargetlist, addToTargetlist, packTargetlist } from './hints';
 import { hintcells, hintcandidates, vSqs, sameRow, sameCol } from './hints';
 import { canSeeEachOther, canAllSeeEachOther, getActiveCandidates, getValuesInCommon, includesAny } from './hints';
+import { formatTargetlist } from '../utilities/utilities';
 
 
 //*****************************************************************************
@@ -216,8 +217,10 @@ export function als() {
 				zvals.forEach((Z) => {
 					// get the cells from both ALS containg the value X
 					let Zcells = candidateValueCells(Z, alsi[2], alsj[2] );
-					let tgts = findTargetsSeenByAll(Z, Zcells, allcells);
-					if (tgts) {
+					let targetlist = findTargetlistSeenByAll(Z, Zcells, allcells);
+					if (targetlist) {
+						let {targets, values} = separateTargetlist(targetlist);
+						let msg = "ALS XZ 1: " + formatTargetlist(targetlist);
 						//console.log("als", X, Z, alsi, alsj);
 						//console.log("Zcells", Zcells, allcells, tgts);
 						//console.log("cansee", comvals, valcells, alsi[2], alsj[2]);
@@ -229,9 +232,9 @@ export function als() {
 							cells: allcells,
 							cells0: alsi[1],
 							cells1: alsj[1],
-							values: [Z],
-							targets: tgts,
-							msg: `ALS XZ 1: Cells: ${tgts}, Value: ${Z}`
+							values: values,
+							targets: targets,
+							msg: msg
 						}
 						//console.log(h.msg);
 						alshints.push(h);

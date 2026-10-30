@@ -1,8 +1,9 @@
-import { includesAny } from './hints';
-import { hintcells, hintcandidates, findSeenTargets2, findTargetsSeenByAll, findTargets } from './hints';
+import { includesAny, separateTargetlist } from './hints';
+import { hintcells, hintcandidates, findSeenTargetlist2, findTargetsSeenByAll, findTargets } from './hints';
 import { sameRow2, sameCol2, canSeeEachOther, sameHouse } from './hints';
 import { Rows, Cols, Squares } from '@sudoku/common/utilities/constants';
 import { getConjugatePairs, getConjugatePairsForValue, getBivaluePairs } from "./conjugates";
+import { formatTargetlist } from '../utilities/utilities';
 
 //*****************************************************************************
 // common functions
@@ -398,24 +399,23 @@ export function XYChain() {
 	paths = paths.sort((a,b) => a[0] - b[0]);
 	//console.log("paths", structuredClone(paths));
 
-	var xytargets = [];
-	paths.forEach((p) => {
-		var val = p[0];
-		var es = p[1][0];
-		var end = p[1].length - 1;
-		var ee = p[1][end];
-		var tgts = findSeenTargets2(val, es, ee);
-		//console.log(val, es, ee, tgts);
-		if (tgts) xytargets.push([val, p[1], tgts])
-	})
-	xytargets = xytargets.sort((a,b) => b[2].length - a[2].length);
-	//console.log("xytargets", xytargets);
+	let cls = [];
+	let targetlist = null;
+	for (const p of paths) {
+		let val = p[0];
+		let es = p[1][0];
+		let end = p[1].length - 1;
+		let ee = p[1][end];
+		targetlist = findSeenTargetlist2( val, es, ee);
+		if (targetlist) {
+			cls = p;
+			break;
+		}
+	}
 
-	var xychain = [];
-	xytargets.forEach((t) => {
-		var val = t[0];
-		var cls = t[1];
-		var tgts = t[2];
+	if (targetlist) {
+		let {targets, values} = separateTargetlist(targetlist);
+		let msg = "XY-Chain: " + formatTargetlist(targetlist);
 
 		var h = {
 			type: 'xyChain',
@@ -423,17 +423,15 @@ export function XYChain() {
 			cols: null,
 			square: null,
 			cells: cls,
-			values: [val],
-			targets: tgts,
-			msg: `XY-Chain: Cells: ${tgts}, Value: ${val}`
+			targetlist: targetlist,
+			values: values,
+			targets: targets,
+			msg: msg
 		}
-		xychain.push(h);
+		return h;
+	}
 
-	})
-
-	if (xychain.length === 0) return null;
-	console.log("xychain", xychain);
-	return xychain;
+	return null;
 
 }
 
