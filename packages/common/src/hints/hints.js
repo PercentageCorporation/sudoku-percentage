@@ -21,8 +21,9 @@ import { suedecoq } from "./suedecoq";
 
 export var hintcells = [];
 export var hintcandidates = [];
+let countsInitialized = false;
 
-export function initHintCells() {
+function initHintCells() {
 	let storecells = cellStore.getState().cells;
 	hintcells = Array(81).fill(0);
 	hintcandidates = Array.from({ length: 81 }, () => []);
@@ -129,8 +130,8 @@ export function resetHintStats() {
 
 export function runManHints() {
 
+	countsInitialized = false;
 	initManHintCells();
-	initCounts();
 	//console.log("hints.js", cells.length)
 
 	let hint;
@@ -142,11 +143,21 @@ export function runManHints() {
 export function runHints() {
 	const gameComplete = cellStore.getState().gameComplete;
 	if (gameComplete) return null;
-	//var result;
-
+	countsInitialized = false;
 	initHintCells();
-	initCounts();
 	//console.log("hints.js", cells.length)
+	let hint = doHints();
+	return hint;
+}
+
+export function runGameHints(gcells, gcandidates) {
+	countsInitialized = false;
+	hintcells = structuredClone(gcells);
+	hintcandidates = structuredClone(gcandidates);
+	return doHints();
+}
+
+export function doHints() {
 
 	let hint;
 
@@ -203,8 +214,8 @@ export var cCounts2p = [[],[],[],[],[],[],[],[],[],[]];
 
 
 // **********************************************************************
-
 export function initCounts() {
+	//if (countsInitialized) return;
 	// count how many times a value occurs in a row/col/square
 	vRows = [];
 	vCols = [];
@@ -264,7 +275,7 @@ export function initCounts() {
 	//console.log(rCounts3,cCounts3);
 	//console.log(rCounts23,cCounts23);
 	//console.log(rCounts2p,cCounts2p);
-
+	countsInitialized = true;
 }
 
 export function validateAllCandidates(arr) {

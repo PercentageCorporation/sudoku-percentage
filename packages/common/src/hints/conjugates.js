@@ -1,6 +1,6 @@
 import { Rows, Cols, Squares } from '@sudoku/common/utilities/constants';
 import { includesAll, canSeeEachOther, includesAny } from './hints';
-import { initHintCells, hintcells, hintcandidates } from './hints';
+import { hintcells, hintcandidates } from './hints';
 
 let localcells = [];
 let conjugateCells = null;
@@ -15,7 +15,6 @@ let bivaluesByValue = null;
 // functions called from anywhere
 
 export function getConjugatePairs() {
-	initHintCells();
 	localcells = hintcells;
 	if (localcells !== conjugateCells) {
 		conjugatePairs = calculateConjugatePairs();
@@ -27,7 +26,6 @@ export function getConjugatePairs() {
 }
 
 export function getBivaluePairs() {
-	initHintCells();
 	localcells = hintcells;
 	if (localcells !== bivalueCells) {
 		bivaluePairs = findAllBivalueCells();;

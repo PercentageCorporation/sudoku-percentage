@@ -3,11 +3,12 @@ import { formatTargetlist } from '@sudoku/common/utilities/utilities';
 import { getConjugatePairs, getBivaluePairs } from "./conjugates";
 import { findTargetlist, separateTargetlist, addToTargetlist, packTargetlist, findSeenTargetlist2, findSeenTargetlist3 } from './hints';
 import { sameRow2, sameCol2 } from './hints';
-import { hintcells, hintcandidates, vSqs } from './hints';
+import { hintcells, hintcandidates } from './hints';
 import { includesAll } from './hints';
 import { rcsContainsValue, findTargetsOnly } from './hints';
-import { getActiveCandidates, getCandidateCells, findCandidatesWithValues, cellHasCandidate } from './hints';
+import { getCandidateCells, findCandidatesWithValues, cellHasCandidate } from './hints';
 import { countTheHouse, checkForTripleCounts } from './triples';
+import { initCounts, vSqs } from './hints';
 
 //*****************************************************************************
 // common functions
@@ -119,6 +120,8 @@ function findMatchingConjugatePairs(cpairs, v, r, c, s) {
 // Empty Rectangles
 
 export function emptyRectangles() {
+	initCounts();
+
 	let rectangles = [];
 	let cpairs = getConjugatePairs();
 	// cpairs: [ value, [cix0, [ac0]], [cix1, [ac1]] ]
@@ -307,7 +310,7 @@ export function uniqueRectangles() {
 		for (let i = 0; i < biclen; ++i) {
 			let bi = bic[i];
 			// bi: [ [ac] [cells containing pair]]
-			if (getActiveCandidates(bi).length !== 2) continue;		// must start with a bivalue cell
+			if (hintcandidates[bi].length !== 2) continue;		// must start with a bivalue cell
 			for (let j = i + 1; j < biclen; ++j) {
 				let bj = bic[j];
 				for (let k = j + 1; k < biclen; ++k) {

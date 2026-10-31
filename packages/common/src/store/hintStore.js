@@ -31,7 +31,6 @@ export const useHintStore = create(
 			setHint: (h) => set({ hint: h }),
 
 			setHintMsg: (msg) => {
-				console.log("msg", msg);
 				let h = get().hint;
 				h.msg = msg;
 				set({ hint: h });

@@ -1,7 +1,8 @@
 import { Rows, Cols, Squares } from '@sudoku/common/utilities/constants';
 import { formatTargetlist } from '@sudoku/common/utilities/utilities';
-import { findTargets, findTargetlist, findInternalTargetlist, includesAll, separateTargetlist } from './hints';
-import { hintcells, hintcandidates, vRows, vCols, vSqs } from './hints';
+import { findTargetlist, findInternalTargetlist, includesAll, separateTargetlist } from './hints';
+import { hintcells, hintcandidates } from './hints';
+import { initCounts, vRows, vCols, vSqs } from './hints';
 
 
 //*****************************************************************************
@@ -123,9 +124,9 @@ export function nakedPairs() {
 		//console.log("nph", nph);
 		let dir = nph[0];
 		let cls = nph[2];
-		let tgts = nph[4];
-		let {targets, values} = separateTargetlist(tgts);
-		let msg = `Naked Pair: Cells:  ${targets}, Values: ${values}`;
+		let tgtlist = nph[4];
+		let {targets, values} = separateTargetlist(tgtlist);
+		let msg = "Naked Pair: " + formatTargetlist(tgtlist);
 
 		let h = {
 			type: "nakedPair",
@@ -152,6 +153,7 @@ export function nakedPairs() {
 // hiddenPairs
 
 export function hiddenPairs() {
+	initCounts();
 
 	// for each row/col/sq find those with at least two values of count two
 	var rpc = [];	// two value candidates

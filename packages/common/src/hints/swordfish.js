@@ -1,7 +1,7 @@
 import { Rows, Cols } from '@sudoku/common/utilities/constants';
 import { formatTargetlist } from '@sudoku/common/utilities/utilities';
 import { findTargetlist, packTargetlist, cellHasCandidate, separateTargetlist } from './hints';
-import { rCounts23, cCounts23 } from './hints';
+import { initCounts, rCounts23, cCounts23 } from './hints';
 
 
 //*****************************************************************************
@@ -91,6 +91,7 @@ function columnsInCommon23(r1, r2, r3, v) {
 
 export function swordfish() {
 
+	initCounts();
 	var sfcandidates = [];
 
 	// first we need to find any rows/colums with exacty 2 or 3 of the value (if any)

@@ -1,5 +1,7 @@
 import { LinearToGrid } from "../utilities/constants";
 import { sampleGames } from "@sudoku/common/store/sampleGames";
+import { computeCandidates } from "./utilities";
+import { hintcandidates, hintcells, runGameHints } from "../hints/hints";
 
 
 export function linearTextToGrid(values) {
@@ -136,4 +138,73 @@ export function getSampleGame(ix) {
 	return {values, solution, description, gameid};
 }
 
+export function playAllGames() {
+	let removedcandidates = Array.from({ length: 81 }, () => []);
 
+	let gamelist = getGameList();
+	for (const gl of gamelist) {
+		let gamenumber = gl[0];
+		let gamedescription = gl[1];
+		console.log(gamenumber, gamedescription);
+
+		let g = getGame(gamenumber);
+		let gcells = g.game;
+		let gcandidates = computeCandidates(gcells);
+		let hint = runGameHints(gcells, gcandidates);
+		while (hint) {
+			console.log(hint);
+			processHint(hint, gcells, removedcandidates);
+			let remaining = gameSolved(hintcells);
+			if (remaining === 0) {
+				console.log("solved");
+				break;
+			}
+			gcandidates = computeCandidates(gcells);
+			for (let cix=0; cix<81; ++cix) {
+				if (gcandidates[cix].length === 0 || removedcandidates[cix].length === 0) continue;
+				let gcix = gcandidates[cix].filter(v => !removedcandidates[cix].includes(v))
+				gcandidates[cix] = gcix;
+			}
+			hint = runGameHints(gcells, gcandidates);
+		}
+		console.log("end", gamenumber, gamedescription);
+	}
+}
+
+function processHint(h, gc, rc) {
+	let targetcells = h.targetcells;
+	let targetlist = h.targetlist;
+	let targets = h.targets;
+	let values = h.values;
+	if (targetcells) {
+		let cix = targetcells[0];
+		let v = values[0];
+		gc[cix] = v;
+	} else if (targetlist) {
+		targetlist.forEach((t) => {
+			let tcls = t[0];
+			let vals = t[1];
+			tcls.forEach((tc) => {
+				vals.forEach((v) => {
+					if (!rc[tc].includes(v)) rc[tc].push(v);
+				})
+			})
+		})
+
+	} else if (targets) {
+		targets.forEach((cix) => {
+			values.forEach((value) => {
+				if (!rc[cix].includes(value)) rc[cix].push(value);
+			})
+		})
+	}
+
+}
+
+function gameSolved(cells) {
+	let count = 0;
+	for (const c of cells) {
+		if (c === 0) ++count;
+	}
+	return count;
+}

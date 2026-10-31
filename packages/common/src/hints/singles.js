@@ -76,7 +76,7 @@ export function singleCounts() {
 	}
 
 	if (singleCounts.length === 0) return null;
-	console.log("singleCounts",singleCounts);
+	//console.log("singleCounts",singleCounts);
 	return singleCounts;
 }
 

@@ -4,6 +4,7 @@ import { useHintStore } from "@sudoku/common/store/hintStore";
 import { doHints } from "@sudoku/common/hints/bothhints";
 import { validateMove, formatSolution } from "@sudoku/common/utilities/utilities";
 import { showHintStats } from "@sudoku/common/hints/hints";
+import { playAllGames } from "@sudoku/common/utilities/games.js";
 
 export default function PlayMenu() {
 	const { selectedValue, selectedCell, setSelectedValue, clearSelectedValue, clearSelectedCell, numbersUsed, resetState } = useGameStateStore();
@@ -41,6 +42,11 @@ export default function PlayMenu() {
 
 	const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+	function doAllGames(e) {
+		e.preventDefault();
+		playAllGames();
+	}
+
 	async function doAllHints(e) {
 		e.preventDefault();
 		setHintsRunning(true);
@@ -64,7 +70,7 @@ export default function PlayMenu() {
 		e.preventDefault();
 		let h = getHint();
 		if (!h) return;
-		console.log("doHint", h);
+		//console.log("doHint", h);
 		processHint(h);
 		//resetHint();
 	}
@@ -296,7 +302,7 @@ export default function PlayMenu() {
 			<div className="flex flex-row mt-4">
 				<div className="flex justify-center mr-4 size-8 text-xl font-bold rounded-md bg-green-300 hover:cursor-pointer "
 					onClick={(e) => select(e,0)} >
-				C
+					C
 				</div>
 				<div className={"flex justify-center mr-4 size-8 text-xl font-bold rounded-md hover:cursor-pointer" + `${showBivalue ? ' bg-green-400' : ' bg-green-300'}`}
 					onClick={(e) => bivalue(e)} >
@@ -304,7 +310,7 @@ export default function PlayMenu() {
 				</div>
 				<div className={"flex justify-center mr-4 size-8 text-xl font-bold rounded-md hover:cursor-pointer" + `${showConjugates ? ' bg-green-400' : ' bg-green-300'}`}
 					onClick={(e) => conjugates(e)} >
-				CP
+					CP
 				</div>
 				<div
 					className="flex justify-center mr-4 size-8 text-xl font-bold rounded-md bg-green-300 hover:cursor-pointer "
@@ -316,7 +322,12 @@ export default function PlayMenu() {
 					onClick={(e) => doAllHints(e)} >
 					&gt;&gt;
 				</div>
+				<div
+					className="flex justify-center mr-4 h-8 w-12 text-xl font-bold rounded-md bg-green-300 hover:cursor-pointer "
+					onClick={(e) => doAllGames(e)} >
+					&gt;&gt;&gt;
 				</div>
+			</div>
 			<div>
 				<div className="flex flex-row h-8 mt-4">
 					<div

@@ -62,7 +62,7 @@ export function computeCandidates(cells) {
 
 	for (let ix=0; ix<81; ++ix) {
 		if (cells[ix] !== 0)
-			candidates[ix] = null;
+			candidates[ix] = [];
 		else
 			candidates[ix] = updateCellCandidates(ix, cells);
 	}

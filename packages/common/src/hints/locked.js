@@ -1,8 +1,9 @@
 import { Rows, Cols, Squares, cellSquare, RCS } from '@sudoku/common/utilities/constants';
 import { findTargets, findTargetsSeenByAll, findTargetsInHouses } from './hints';
 import { findTargetlist, findTargetlistSeenByAll, separateTargetlist, addToTargetlist, packTargetlist } from './hints';
-import { hintcells, hintcandidates, vSqs, sameRow, sameCol } from './hints';
+import { hintcells, hintcandidates, sameRow, sameCol } from './hints';
 import { canSeeEachOther, canAllSeeEachOther, getActiveCandidates, getValuesInCommon, includesAny } from './hints';
+import { initCounts, vSqs } from './hints';
 import { formatTargetlist } from '../utilities/utilities';
 
 
@@ -318,6 +319,7 @@ export function als() {
 // lockedCandidates
 
 export function lockedCandidates1() {
+	initCounts();
 
 	let lc = [];
 	for (let s=0; s<9; ++s) {

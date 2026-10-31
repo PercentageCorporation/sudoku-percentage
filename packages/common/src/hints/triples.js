@@ -468,7 +468,7 @@ export function hiddenTriples() {
 			}
 		}
 
-	console.log("targets",targets);
+	//console.log("targets",targets);
 
 	var triples = [];
 	for (const tgt of targets) {
